@@ -16,19 +16,33 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import LogoutIcon from "@mui/icons-material/Logout";
+import Tooltip from "@mui/material/Tooltip";
 
 const drawerWidth = 240;
-const links = [
-    { to: "/", label: "Dashboard" },
-    { to: "/services", label: "Services" },
-    { to: "/barbers", label: "Barbers" },
-    { to: "/appointments", label: "Appointments" },
-    { to: "/profile", label: "Profile" },
-];
 
 export default function Layout() {
+    const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
     const toggle = () => setMobileOpen(v => !v);
+
+    const links = [
+        { to: "/", label: "Dashboard", public: true },
+        { to: "/services", label: "Services", public: true },
+        { to: "/barbers", label: "Barbers", public: true },
+        { to: "/appointments", label: "Appointments", role: "user" },
+        { to: "/profile", label: "Profile", role: "user" },
+        { to: "/admin", label: "Admin Panel", role: "admin" },
+    ];
+
+    const visibleLinks = links.filter(link => {
+        if (link.public) return true;
+        if (!user) return false;
+        if (link.role === "user") return true;
+        if (link.role === "admin") return user.role === "admin";
+        return false;
+    });
 
     const drawer = (
         <Box onClick={toggle} sx={{ textAlign: "center" }}>
@@ -37,7 +51,7 @@ export default function Layout() {
             </Typography>
             <Divider />
             <List>
-                {links.map(({ to, label }) => (
+                {visibleLinks.map(({ to, label }) => (
                     <ListItem key={to} disablePadding>
                         <ListItemButton
                             component={NavLink}
@@ -74,7 +88,7 @@ export default function Layout() {
                         BarberService
                     </Typography>
                     <Box sx={{ display: { xs: "none", md: "block" } }}>
-                        {links.map(({ to, label }) => (
+                        {visibleLinks.map(({ to, label }) => (
                             <NavLink
                                 key={to}
                                 to={to}
@@ -88,6 +102,14 @@ export default function Layout() {
                             </NavLink>
                         ))}
                     </Box>
+                    {user && (
+                        <Tooltip title="Выйти">
+                            <IconButton color="inherit" onClick={logout}>
+                                <LogoutIcon />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+
                 </Toolbar>
             </AppBar>
             <Drawer

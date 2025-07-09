@@ -1,3 +1,4 @@
+// src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import SignIn from "./pages/SignIn";
@@ -12,6 +13,7 @@ import ServicesPage from "./pages/Services";
 import Barbers from "./pages/Barbers";
 import Appointments from "./pages/Appointments";
 import Profile from "./pages/Profile";
+import AdminPanel from "./pages/AdminPanel";
 
 export default function App() {
     return (
@@ -29,6 +31,13 @@ export default function App() {
                     <Route path="barbers" element={<Barbers />} />
                     <Route path="appointments" element={<Appointments />} />
                     <Route path="profile" element={<Profile />} />
+                </Route>
+            </Route>
+
+            {/* только для админа */}
+            <Route element={<ProtectedRoute role="admin" />}>
+                <Route element={<Layout />}>
+                    <Route path="admin" element={<AdminPanel />} />
                 </Route>
             </Route>
 

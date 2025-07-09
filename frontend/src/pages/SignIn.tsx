@@ -1,36 +1,44 @@
-// src/pages/SignIn.tsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
     Alert,
     Box,
-    Button,
     Container,
+    Paper,
+    Snackbar,
     TextField,
     Typography,
-    Paper,
 } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
 
 export default function SignIn() {
     const { login } = useAuth();
-    const nav = useNavigate();
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: "error" | "success";
+    }>({ open: false, message: "", severity: "error" });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
         if (!email || !password) {
-            setError("Все поля обязательны");
+            setSnackbar({ open: true, message: "Все поля обязательны", severity: "error" });
             return;
         }
+
+        setLoading(true);
         try {
             await login({ email, password });
-            nav("/");
+            navigate("/", { replace: true });
         } catch (err: any) {
-            setError(err.message || "Ошибка входа");
+            setSnackbar({ open: true, message: err.message || "Ошибка входа", severity: "error" });
+            setLoading(false);
         }
     };
 
@@ -40,8 +48,12 @@ export default function SignIn() {
                 <Typography variant="h5" align="center" gutterBottom>
                     Вход
                 </Typography>
-                {error && <Alert severity="error">{error}</Alert>}
-                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, display: "grid", gap: 2 }}>
+
+                <Box
+                    component="form"
+                    onSubmit={handleSubmit}
+                    sx={{ mt: 2, display: "grid", gap: 2 }}
+                >
                     <TextField
                         label="Email"
                         type="email"
@@ -49,6 +61,7 @@ export default function SignIn() {
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                     />
+
                     <TextField
                         label="Пароль"
                         type="password"
@@ -56,14 +69,41 @@ export default function SignIn() {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                     />
-                    <Button type="submit" variant="contained" fullWidth>
+
+                    <LoadingButton
+                        type="submit"
+                        variant="contained"
+                        fullWidth
+                        loading={loading}
+                    >
                         Войти
-                    </Button>
+                    </LoadingButton>
                 </Box>
-                <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-                    Нет аккаунта? <Link to="/signup">Регистрация</Link>
+
+                <Typography
+                    variant="body2"
+                    align="center"
+                    sx={{ mt: 2 }}
+                >
+                    Нет аккаунта?{" "}
+                    <RouterLink to="/signup" style={{ textDecoration: "none", color: "#1976d2" }}>
+                        Регистрация
+                    </RouterLink>
                 </Typography>
             </Paper>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 }

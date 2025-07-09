@@ -59,6 +59,11 @@ export default function BarbersPage() {
     }, [token]);
 
     const save = () => {
+        if (!form.name || form.experience! < 0) {
+            alert("Пожалуйста, введите имя и корректный опыт.");
+            return;
+        }
+
         const method = form.id ? "PUT" : "POST";
         const url = form.id ? `/barbers/${form.id}` : "/barbers";
 
@@ -77,11 +82,28 @@ export default function BarbersPage() {
             .catch(console.error);
     };
 
+    const handleDelete = (id: number) => {
+        if (!window.confirm("Удалить этого мастера?")) return;
+
+        fetch(`${import.meta.env.VITE_API_URL}/barbers/${id}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+            .then(() => load())
+            .catch(console.error);
+    };
+
     return (
         <Box>
             <Box display="flex" alignItems="center" mb={2}>
-                <Typography variant="h5" sx={{ flexGrow: 1 }}>Мастера</Typography>
-                <IconButton onClick={load} title="Обновить"><RefreshIcon /></IconButton>
+                <Typography variant="h5" sx={{ flexGrow: 1 }}>
+                    Мастера
+                </Typography>
+                <IconButton onClick={load} title="Обновить">
+                    <RefreshIcon />
+                </IconButton>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -99,7 +121,7 @@ export default function BarbersPage() {
                     <TableHead>
                         <TableRow>
                             <TableCell>Имя</TableCell>
-                            <TableCell align="center">Опыт</TableCell>
+                            <TableCell align="center">Опыт (лет)</TableCell>
                             <TableCell align="center">Действия</TableCell>
                         </TableRow>
                     </TableHead>
@@ -118,6 +140,13 @@ export default function BarbersPage() {
                                     >
                                         Ред.
                                     </Button>
+                                    <Button
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleDelete(b.id)}
+                                    >
+                                        Уд.
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -133,7 +162,7 @@ export default function BarbersPage() {
             </TableContainer>
 
             <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-                <DialogTitle>{form.id ? "Редактировать" : "Новый мастер"}</DialogTitle>
+                <DialogTitle>{form.id ? "Редактировать мастера" : "Новый мастер"}</DialogTitle>
                 <DialogContent dividers>
                     <TextField
                         fullWidth
@@ -153,7 +182,9 @@ export default function BarbersPage() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>Отмена</Button>
-                    <Button variant="contained" onClick={save}>Сохранить</Button>
+                    <Button variant="contained" onClick={save}>
+                        Сохранить
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Box>
