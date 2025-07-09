@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  role         String        @default("user")
+  phone        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  appointments Appointment[]
+
+  @@map("users")
+}
+
+model Service {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  duration     Int           // в минутах
+  price        Float
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  appointments Appointment[]
+
+  @@map("services")
+}
+
+model Barber {
+  id             Int           @id @default(autoincrement())
+  name           String
+  specialization String?
+  rating         Float         @default(0.0)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  appointments   Appointment[]
+
+  @@map("barbers")
+}
+
+model Appointment {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  serviceId  Int
+  barberId   Int
+  date       DateTime
+  time       String   // "HH:MM"
+  status     String   @default("pending")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user      User    @relation(fields: [userId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id])
+  barber    Barber  @relation(fields: [barberId], references: [id])
+
+  @@map("appointments")
+}

@@ -1,0 +1,14 @@
+/* src/index.css */
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #f9f9f9;
+}
+
+.root {
+    padding: 1rem;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

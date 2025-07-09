@@ -1,0 +1,36 @@
+{
+    "name": "barber-service-backend",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "ts-node-dev --respawn src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate": "prisma migrate dev",
+        "prisma:seed": "prisma db seed"
+    },
+    "prisma": {
+        "seed": "ts-node --transpile-only prisma/seed.ts"
+    },
+    "dependencies": {
+        "@prisma/client": "^4.0.0",
+        "bcrypt": "^5.0.1",
+        "cors": "^2.8.5",
+        "dotenv": "^10.0.0",
+        "express": "^4.17.1",
+        "jsonwebtoken": "^9.0.2",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/bcrypt": "^5.0.0",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^4.17.13",
+        "@types/jsonwebtoken": "^8.5.6",
+        "@types/node": "^16.0.0",
+        "prisma": "^4.0.0",
+        "ts-node": "^10.9.2",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.8.3"
+    }
+}
