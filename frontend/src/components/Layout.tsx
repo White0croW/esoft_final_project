@@ -1,4 +1,5 @@
 // src/components/Layout.tsx
+import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
     AppBar,
@@ -8,64 +9,68 @@ import {
     Drawer,
     IconButton,
     List,
-    ListItem,
     ListItemButton,
     ListItemText,
     Toolbar,
     Typography,
+    Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
 import LogoutIcon from "@mui/icons-material/Logout";
-import Tooltip from "@mui/material/Tooltip";
+import { useAuth } from "../contexts/AuthContext";
 
 const drawerWidth = 240;
+
+interface LinkConfig {
+    to: string;
+    label: string;
+    public?: boolean;
+    role?: "user" | "admin";
+}
 
 export default function Layout() {
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
-    const toggle = () => setMobileOpen(v => !v);
+    const toggleDrawer = () => setMobileOpen(open => !open);
 
-    const links = [
-        { to: "/", label: "Dashboard", public: true },
-        { to: "/services", label: "Services", public: true },
-        { to: "/barbers", label: "Barbers", public: true },
-        { to: "/appointments", label: "Appointments", role: "user" },
-        { to: "/profile", label: "Profile", role: "user" },
-        { to: "/admin", label: "Admin Panel", role: "admin" },
+    const links: LinkConfig[] = [
+        { to: "/", label: "Главная", public: true },
+        { to: "/services", label: "Услуги", public: true },
+        { to: "/barbers", label: "Мастера", public: true },
+        { to: "/appointments", label: "Мои записи", role: "user" },
+        { to: "/profile", label: "Профиль", role: "user" },
+        { to: "/admin", label: "Админ-панель", role: "admin" },
     ];
 
     const visibleLinks = links.filter(link => {
         if (link.public) return true;
         if (!user) return false;
-        if (link.role === "user") return true;
-        if (link.role === "admin") return user.role === "admin";
-        return false;
+        return link.role === "admin"
+            ? user.role === "admin"
+            : link.role === "user";
     });
 
     const drawer = (
-        <Box onClick={toggle} sx={{ textAlign: "center" }}>
+        <Box onClick={toggleDrawer} sx={{ textAlign: "center" }}>
             <Typography variant="h6" sx={{ my: 2 }}>
                 BarberService
             </Typography>
             <Divider />
             <List>
                 {visibleLinks.map(({ to, label }) => (
-                    <ListItem key={to} disablePadding>
-                        <ListItemButton
-                            component={NavLink}
-                            to={to}
-                            sx={{
-                                "&.active .MuiListItemText-primary": {
-                                    color: "primary.main",
-                                    fontWeight: "bold",
-                                },
-                            }}
-                        >
-                            <ListItemText primary={label} />
-                        </ListItemButton>
-                    </ListItem>
+                    <ListItemButton
+                        key={to}
+                        component={NavLink}
+                        to={to}
+                        sx={{
+                            "&.active .MuiListItemText-primary": {
+                                color: "primary.main",
+                                fontWeight: "bold",
+                            },
+                        }}
+                    >
+                        <ListItemText primary={label} />
+                    </ListItemButton>
                 ))}
             </List>
         </Box>
@@ -74,20 +79,23 @@ export default function Layout() {
     return (
         <Box sx={{ display: "flex" }}>
             <CssBaseline />
+
             <AppBar component="nav">
                 <Toolbar>
                     <IconButton
                         color="inherit"
                         edge="start"
-                        onClick={toggle}
+                        onClick={toggleDrawer}
                         sx={{ mr: 2, display: { md: "none" } }}
                     >
                         <MenuIcon />
                     </IconButton>
+
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         BarberService
                     </Typography>
-                    <Box sx={{ display: { xs: "none", md: "block" } }}>
+
+                    <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
                         {visibleLinks.map(({ to, label }) => (
                             <NavLink
                                 key={to}
@@ -101,21 +109,22 @@ export default function Layout() {
                                 {label}
                             </NavLink>
                         ))}
-                    </Box>
-                    {user && (
-                        <Tooltip title="Выйти">
-                            <IconButton color="inherit" onClick={logout}>
-                                <LogoutIcon />
-                            </IconButton>
-                        </Tooltip>
-                    )}
 
+                        {user && (
+                            <Tooltip title="Выйти">
+                                <IconButton color="inherit" onClick={logout}>
+                                    <LogoutIcon />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    </Box>
                 </Toolbar>
             </AppBar>
+
             <Drawer
                 variant="temporary"
                 open={mobileOpen}
-                onClose={toggle}
+                onClose={toggleDrawer}
                 ModalProps={{ keepMounted: true }}
                 sx={{
                     display: { xs: "block", md: "none" },

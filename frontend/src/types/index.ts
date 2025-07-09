@@ -39,3 +39,19 @@ export interface UserProfile {
     phone?: string;
     token?: string;
 }
+
+export interface BarberShop {
+    id: number;
+    name: string;
+    address: string;
+    lat: number;
+    lon: number;
+    masterName: string;
+}
+
+export interface PortfolioItem {
+    id: number;
+    imageUrl: string;
+    description: string;
+}
+

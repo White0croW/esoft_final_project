@@ -1,3 +1,4 @@
+// src/pages/Appointments.tsx
 import React, { useEffect, useState } from "react";
 import {
     Box,
@@ -6,8 +7,6 @@ import {
     Paper,
     Select,
     SelectChangeEvent,
-    Tab,
-    Tabs,
     Table,
     TableBody,
     TableCell,
@@ -20,7 +19,7 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 interface Appointment {
@@ -33,21 +32,10 @@ interface Appointment {
     status: "new" | "confirmed" | "done" | "canceled";
 }
 
-const tabs = [
-    { label: "Услуги", path: "/services" },
-    { label: "Мастера", path: "/barbers" },
-    { label: "Записи", path: "/appointments" },
-    { label: "Клиенты", path: "/clients" },
-];
-
 export default function AppointmentsPage() {
     const { token, logout } = useAuth();
     const navigate = useNavigate();
-    const loc = useLocation();
 
-    const [tabIndex, setTabIndex] = useState(
-        () => tabs.findIndex(t => t.path === loc.pathname) || 2
-    );
     const [items, setItems] = useState<Appointment[]>([]);
     const [filters, setFilters] = useState({
         date: "",
@@ -74,11 +62,6 @@ export default function AppointmentsPage() {
             .catch(() => setItems([]));
     }, [token]);
 
-    const handleTab = (_: React.SyntheticEvent, idx: number) => {
-        setTabIndex(idx);
-        navigate(tabs[idx].path);
-    };
-
     const handleTextFilter = (field: keyof typeof filters) => (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -104,11 +87,9 @@ export default function AppointmentsPage() {
 
     return (
         <Box>
-            <Tabs value={tabIndex} onChange={handleTab} sx={{ mb: 3 }}>
-                {tabs.map(t => <Tab key={t.path} label={t.label} />)}
-            </Tabs>
-
-            <Typography variant="h5" gutterBottom>Записи</Typography>
+            <Typography variant="h5" gutterBottom>
+                Ваши записи
+            </Typography>
 
             <Paper sx={{ p: 2, mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
                 <TextField
@@ -125,7 +106,9 @@ export default function AppointmentsPage() {
                     onChange={handleSelectFilter("status")}
                     sx={{ minWidth: 140 }}
                 >
-                    <MenuItem value=""><em>Все статусы</em></MenuItem>
+                    <MenuItem value="">
+                        <em>Все статусы</em>
+                    </MenuItem>
                     <MenuItem value="new">Новая</MenuItem>
                     <MenuItem value="confirmed">Подтверждена</MenuItem>
                     <MenuItem value="done">Выполнена</MenuItem>
@@ -175,8 +158,12 @@ export default function AppointmentsPage() {
                                     <TableCell>{a.barberName}</TableCell>
                                     <TableCell>{a.status}</TableCell>
                                     <TableCell align="center">
-                                        <IconButton size="small"><EditIcon fontSize="small" /></IconButton>
-                                        <IconButton size="small" color="error"><DeleteIcon fontSize="small" /></IconButton>
+                                        <IconButton size="small">
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton size="small" color="error">
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
                                     </TableCell>
                                 </TableRow>
                             ))
