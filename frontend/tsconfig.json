@@ -1,22 +1,15 @@
 {
     "compilerOptions": {
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "target": "ESNext",
-        "useDefineForClassFields": true,
-        "lib": [
-            "ESNext",
-            "DOM"
-        ],
-        "jsx": "react-jsx",
-        "module": "ESNext",
-        "moduleResolution": "Node",
-        "strict": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true
+      "target": "ES2018",
+      "module": "ESNext",
+      "jsx": "react-jsx",
+      "strict": true,
+      "moduleResolution": "node",
+      "baseUrl": "src",
+      "paths": {
+        "@/*": ["*"]
+      }
     },
-    "include": [
-        "src"
-    ]
-}
+    "include": ["src"]
+  }
+  
