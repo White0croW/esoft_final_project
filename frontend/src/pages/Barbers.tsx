@@ -16,83 +16,122 @@ import {
     TextField,
     Typography,
     IconButton,
+    Snackbar,
+    Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-interface Barber {
-    id: number;
-    name: string;
-    experience: number;
-}
+import {
+    getBarbers,
+    createBarber,
+    updateBarber,
+    deleteBarber,
+} from "../api/barbers";
+import { Barber } from "../types";
 
 export default function BarbersPage() {
-    const { token, logout } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     const [list, setList] = useState<Barber[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [form, setForm] = useState<Partial<Barber>>({ name: "", experience: 1 });
+    const [form, setForm] = useState<Partial<Barber>>({
+        name: "",
+        experience: 1,
+    });
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: "success" | "error";
+    }>({ open: false, message: "", severity: "success" });
 
-    const load = () => {
-        if (!token) return;
-        fetch(`${import.meta.env.VITE_API_URL}/barbers`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    logout();
-                    navigate("/signin", { replace: true });
-                    return Promise.reject();
-                }
-                if (!res.ok) return Promise.reject(`Error ${res.status}`);
-                return res.json() as Promise<Barber[]>;
-            })
-            .then(setList)
-            .catch(() => setList([]));
+    const load = async () => {
+        try {
+            const data = await getBarbers();
+            setList(data);
+        } catch (err: any) {
+            if (err.response?.status === 401) {
+                logout();
+                navigate("/signin", { replace: true });
+            } else {
+                setSnackbar({
+                    open: true,
+                    message: err.message || "Ошибка загрузки мастеров",
+                    severity: "error",
+                });
+            }
+        }
     };
 
     useEffect(() => {
         load();
-    }, [token]);
+    }, []);
 
-    const save = () => {
+    const handleSave = async () => {
         if (!form.name || form.experience! < 0) {
-            alert("Пожалуйста, введите имя и корректный опыт.");
+            setSnackbar({
+                open: true,
+                message: "Введите имя и корректный опыт",
+                severity: "error",
+            });
             return;
         }
 
-        const method = form.id ? "PUT" : "POST";
-        const url = form.id ? `/barbers/${form.id}` : "/barbers";
-
-        fetch(`${import.meta.env.VITE_API_URL}${url}`, {
-            method,
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(form),
-        })
-            .then(() => {
-                setDialogOpen(false);
-                load();
-            })
-            .catch(console.error);
+        try {
+            if (form.id) {
+                await updateBarber(form.id, {
+                    name: form.name!,
+                    experience: form.experience!,
+                });
+                setSnackbar({
+                    open: true,
+                    message: "Мастер обновлён",
+                    severity: "success",
+                });
+            } else {
+                await createBarber({
+                    name: form.name!,
+                    experience: form.experience!,
+                });
+                setSnackbar({
+                    open: true,
+                    message: "Мастер добавлен",
+                    severity: "success",
+                });
+            }
+            setDialogOpen(false);
+            load();
+        } catch (err: any) {
+            setSnackbar({
+                open: true,
+                message: err.message || "Ошибка сохранения мастера",
+                severity: "error",
+            });
+        }
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = async (id: number) => {
         if (!window.confirm("Удалить этого мастера?")) return;
 
-        fetch(`${import.meta.env.VITE_API_URL}/barbers/${id}`, {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        })
-            .then(() => load())
-            .catch(console.error);
+        try {
+            await deleteBarber(id);
+            setSnackbar({
+                open: true,
+                message: "Мастер удалён",
+                severity: "success",
+            });
+            load();
+        } catch (err: any) {
+            setSnackbar({
+                open: true,
+                message: err.message || "Ошибка удаления мастера",
+                severity: "error",
+            });
+        }
     };
 
     return (
@@ -126,27 +165,27 @@ export default function BarbersPage() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {list.map(b => (
+                        {list.map((b) => (
                             <TableRow key={b.id} hover>
                                 <TableCell>{b.name}</TableCell>
                                 <TableCell align="center">{b.experience}</TableCell>
                                 <TableCell align="center">
-                                    <Button
+                                    <IconButton
                                         size="small"
                                         onClick={() => {
                                             setForm(b);
                                             setDialogOpen(true);
                                         }}
                                     >
-                                        Ред.
-                                    </Button>
-                                    <Button
+                                        <EditIcon />
+                                    </IconButton>
+                                    <IconButton
                                         size="small"
                                         color="error"
                                         onClick={() => handleDelete(b.id)}
                                     >
-                                        Уд.
-                                    </Button>
+                                        <DeleteIcon />
+                                    </IconButton>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -161,14 +200,23 @@ export default function BarbersPage() {
                 </Table>
             </TableContainer>
 
-            <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-                <DialogTitle>{form.id ? "Редактировать мастера" : "Новый мастер"}</DialogTitle>
+            <Dialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+            >
+                <DialogTitle>
+                    {form.id ? "Редактировать мастера" : "Новый мастер"}
+                </DialogTitle>
                 <DialogContent dividers>
                     <TextField
                         fullWidth
                         label="Имя"
                         value={form.name || ""}
-                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        onChange={(e) =>
+                            setForm((f) => ({ ...f, name: e.target.value }))
+                        }
                         margin="normal"
                     />
                     <TextField
@@ -176,17 +224,35 @@ export default function BarbersPage() {
                         label="Опыт (лет)"
                         type="number"
                         value={form.experience}
-                        onChange={e => setForm(f => ({ ...f, experience: +e.target.value }))}
+                        onChange={(e) =>
+                            setForm((f) => ({
+                                ...f,
+                                experience: +e.target.value,
+                            }))
+                        }
                         margin="normal"
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>Отмена</Button>
-                    <Button variant="contained" onClick={save}>
+                    <Button variant="contained" onClick={handleSave}>
                         Сохранить
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

@@ -29,23 +29,38 @@ export default function SignUp() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!name || !email || !password) {
-            setSnackbar({ open: true, message: "Заполните все поля", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: "Заполните все поля",
+                severity: "error",
+            });
             return;
         }
         if (password !== password2) {
-            setSnackbar({ open: true, message: "Пароли не совпадают", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: "Пароли не совпадают",
+                severity: "error",
+            });
             return;
         }
 
         setLoading(true);
         try {
             await register({ name, email, password });
-            setSnackbar({ open: true, message: "Регистрация успешна", severity: "success" });
-            setTimeout(() => navigate("/", { replace: true }), 500);
+            setSnackbar({
+                open: true,
+                message: "Регистрация успешна",
+                severity: "success",
+            });
+            setTimeout(() => navigate("/", { replace: true }), 800);
         } catch (err: any) {
-            setSnackbar({ open: true, message: err.message || "Ошибка регистрации", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: err.message || "Ошибка регистрации",
+                severity: "error",
+            });
             setLoading(false);
         }
     };
@@ -66,7 +81,7 @@ export default function SignUp() {
                         label="Имя"
                         fullWidth
                         value={name}
-                        onChange={e => setName(e.target.value)}
+                        onChange={(e) => setName(e.target.value)}
                     />
 
                     <TextField
@@ -74,7 +89,7 @@ export default function SignUp() {
                         type="email"
                         fullWidth
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <TextField
@@ -82,7 +97,7 @@ export default function SignUp() {
                         type="password"
                         fullWidth
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
 
                     <TextField
@@ -90,7 +105,7 @@ export default function SignUp() {
                         type="password"
                         fullWidth
                         value={password2}
-                        onChange={e => setPassword2(e.target.value)}
+                        onChange={(e) => setPassword2(e.target.value)}
                     />
 
                     <LoadingButton
@@ -103,13 +118,12 @@ export default function SignUp() {
                     </LoadingButton>
                 </Box>
 
-                <Typography
-                    variant="body2"
-                    align="center"
-                    sx={{ mt: 2 }}
-                >
+                <Typography variant="body2" align="center" sx={{ mt: 2 }}>
                     Уже есть аккаунт?{" "}
-                    <RouterLink to="/signin" style={{ textDecoration: "none", color: "#1976d2" }}>
+                    <RouterLink
+                        to="/signin"
+                        style={{ textDecoration: "none", color: "#1976d2" }}
+                    >
                         Войти
                     </RouterLink>
                 </Typography>
@@ -118,11 +132,11 @@ export default function SignUp() {
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={4000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
             >
                 <Alert
                     severity={snackbar.severity}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
                 >
                     {snackbar.message}
                 </Alert>

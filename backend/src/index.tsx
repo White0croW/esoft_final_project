@@ -8,6 +8,9 @@ import userRoutes from "./routes/user.routes";
 import appointmentRoutes from "./routes/appointment.routes";
 import serviceRoutes from "./routes/service.routes";
 import barberRoutes from "./routes/barber.routes";
+import barbershopsRouter from "./routes/barbershops.routes";
+import portfolioRouter from "./routes/portfolio.routes";
+import dadataRoutes from "./routes/dadata.routes";
 
 dotenv.config();
 const app = express();
@@ -21,6 +24,9 @@ app.use("/users", userRoutes);
 app.use("/appointments", appointmentRoutes);
 app.use("/services", serviceRoutes);
 app.use("/barbers", barberRoutes);
+app.use("/barbershops", barbershopsRouter);
+app.use("/portfolio", portfolioRouter);
+app.use("/api", dadataRoutes);
 
 // 2) Раздаём фронтенд (папка dist, которую создал vite build)
 //    предполагаем вот такую структуру:

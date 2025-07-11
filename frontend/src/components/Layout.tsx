@@ -1,4 +1,3 @@
-// src/components/Layout.tsx
 import React, { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
@@ -31,7 +30,7 @@ interface LinkConfig {
 export default function Layout() {
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
-    const toggleDrawer = () => setMobileOpen(open => !open);
+    const toggleDrawer = () => setMobileOpen((o) => !o);
 
     const links: LinkConfig[] = [
         { to: "/", label: "Главная", public: true },
@@ -42,7 +41,7 @@ export default function Layout() {
         { to: "/admin", label: "Админ-панель", role: "admin" },
     ];
 
-    const visibleLinks = links.filter(link => {
+    const visibleLinks = links.filter((link) => {
         if (link.public) return true;
         if (!user) return false;
         return link.role === "admin"
@@ -72,6 +71,16 @@ export default function Layout() {
                         <ListItemText primary={label} />
                     </ListItemButton>
                 ))}
+                {!user && (
+                    <>
+                        <ListItemButton component={NavLink} to="/signin">
+                            <ListItemText primary="Войти" />
+                        </ListItemButton>
+                        <ListItemButton component={NavLink} to="/signup">
+                            <ListItemText primary="Регистрация" />
+                        </ListItemButton>
+                    </>
+                )}
             </List>
         </Box>
     );
@@ -91,7 +100,12 @@ export default function Layout() {
                         <MenuIcon />
                     </IconButton>
 
-                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                    <Typography
+                        variant="h6"
+                        component={NavLink}
+                        to="/"
+                        sx={{ flexGrow: 1, color: "inherit", textDecoration: "none" }}
+                    >
                         BarberService
                     </Typography>
 
@@ -109,7 +123,22 @@ export default function Layout() {
                                 {label}
                             </NavLink>
                         ))}
-
+                        {!user && (
+                            <>
+                                <NavLink
+                                    to="/signin"
+                                    style={{ margin: "0 12px", color: "#fff", textDecoration: "none" }}
+                                >
+                                    Войти
+                                </NavLink>
+                                <NavLink
+                                    to="/signup"
+                                    style={{ margin: "0 12px", color: "#fff", textDecoration: "none" }}
+                                >
+                                    Регистрация
+                                </NavLink>
+                            </>
+                        )}
                         {user && (
                             <Tooltip title="Выйти">
                                 <IconButton color="inherit" onClick={logout}>

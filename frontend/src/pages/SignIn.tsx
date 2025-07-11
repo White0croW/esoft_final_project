@@ -28,7 +28,11 @@ export default function SignIn() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !password) {
-            setSnackbar({ open: true, message: "Все поля обязательны", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: "Все поля обязательны",
+                severity: "error",
+            });
             return;
         }
 
@@ -37,7 +41,11 @@ export default function SignIn() {
             await login({ email, password });
             navigate("/", { replace: true });
         } catch (err: any) {
-            setSnackbar({ open: true, message: err.message || "Ошибка входа", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: err.message || "Ошибка входа",
+                severity: "error",
+            });
             setLoading(false);
         }
     };
@@ -59,7 +67,7 @@ export default function SignIn() {
                         type="email"
                         fullWidth
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <TextField
@@ -67,7 +75,7 @@ export default function SignIn() {
                         type="password"
                         fullWidth
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
 
                     <LoadingButton
@@ -80,13 +88,12 @@ export default function SignIn() {
                     </LoadingButton>
                 </Box>
 
-                <Typography
-                    variant="body2"
-                    align="center"
-                    sx={{ mt: 2 }}
-                >
+                <Typography variant="body2" align="center" sx={{ mt: 2 }}>
                     Нет аккаунта?{" "}
-                    <RouterLink to="/signup" style={{ textDecoration: "none", color: "#1976d2" }}>
+                    <RouterLink
+                        to="/signup"
+                        style={{ textDecoration: "none", color: "#1976d2" }}
+                    >
                         Регистрация
                     </RouterLink>
                 </Typography>
@@ -95,11 +102,11 @@ export default function SignIn() {
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={4000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
             >
                 <Alert
                     severity={snackbar.severity}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
                 >
                     {snackbar.message}
                 </Alert>

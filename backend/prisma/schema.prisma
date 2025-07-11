@@ -7,12 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AppointmentStatus {
+  NEW
+  CONFIRMED
+  DONE
+  CANCELED
+}
+
 model User {
   id           Int           @id @default(autoincrement())
   name         String
   email        String        @unique
   password     String
-  role         String        @default("user")
+  role         Role          @default(USER)
   phone        String?
   createdAt    DateTime      @default(now()) @map("created_at")
 
@@ -34,12 +46,28 @@ model Service {
   @@map("services")
 }
 
+model Barbershop {
+  id        Int       @id @default(autoincrement())
+  name      String
+  address   String
+  lat       Float
+  lon       Float
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  barbers   Barber[]
+
+  @@map("barbershops")
+}
+
 model Barber {
-  id             Int           @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   name           String
   specialization String?
-  rating         Float         @default(0.0)
-  createdAt      DateTime      @default(now()) @map("created_at")
+  rating         Float            @default(0.0)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  barbershopId   Int?
+  barbershop     Barbershop?      @relation(fields: [barbershopId], references: [id])
 
   appointments   Appointment[]
 
@@ -47,18 +75,27 @@ model Barber {
 }
 
 model Appointment {
-  id         Int      @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   userId     Int
   serviceId  Int
   barberId   Int
   date       DateTime
-  time       String   // "HH:MM"
-  status     String   @default("pending")
-  createdAt  DateTime @default(now()) @map("created_at")
+  time       String            // "HH:MM"
+  status     AppointmentStatus @default(NEW)
+  createdAt  DateTime          @default(now()) @map("created_at")
 
   user      User    @relation(fields: [userId], references: [id])
   service   Service @relation(fields: [serviceId], references: [id])
   barber    Barber  @relation(fields: [barberId], references: [id])
 
   @@map("appointments")
+}
+
+model Portfolio {
+  id          Int      @id @default(autoincrement())
+  imageUrl    String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("portfolio")
 }

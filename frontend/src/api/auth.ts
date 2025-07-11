@@ -1,11 +1,23 @@
-import axios from "axios";
+import api from "./base";
 
-const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
-});
+interface SignInData {
+    email: string;
+    password: string;
+}
+interface SignUpData extends SignInData {
+    name: string;
+}
 
-export const signIn = (data: { email: string; password: string }) =>
-    api.post("/auth/signin", data);
+export interface SignInResponse {
+    token: string;
+}
 
-export const signUp = (data: { name: string; email: string; password: string }) =>
-    api.post("/auth/signup", data);
+export const signIn = (data: SignInData) =>
+    api.post<SignInResponse>("/auth/signin", data).then((res) => res.data);
+
+export const signUp = (data: SignUpData) =>
+    api.post<SignInResponse>("/auth/signup", data).then((res) => res.data);
+
+// Получить профиль (если нужно)
+export const fetchProfile = () =>
+    api.get("/auth/me").then((res) => res.data);

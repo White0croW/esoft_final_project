@@ -15,107 +15,107 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-interface Profile {
-    name: string;
-    email: string;
-    phone?: string;
-}
+import {
+    getProfile,
+    updateProfile,
+    changePassword,
+    Profile,
+} from "../api/profile";
 
 export default function ProfilePage() {
-    const { token, logout } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
-    const [data, setData] = useState<Profile>({ name: "", email: "", phone: "" });
+    const [data, setData] = useState<Profile>({
+        name: "",
+        email: "",
+        phone: "",
+    });
     const [edit, setEdit] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const [password, setPassword] = useState("");
+    const [oldPassword, setOldPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
     const [confirm, setConfirm] = useState("");
 
-    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
-        open: false,
-        message: "",
-        severity: "success",
-    });
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: "success" | "error";
+    }>({ open: false, message: "", severity: "success" });
 
     useEffect(() => {
-        if (!token) return;
-
-        fetch(`${import.meta.env.VITE_API_URL}/users/profile`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then(res => {
-                if (res.status === 401) {
+        getProfile()
+            .then(setData)
+            .catch((err) => {
+                if (err.response?.status === 401) {
                     logout();
                     navigate("/signin", { replace: true });
-                    return Promise.reject();
                 }
-                if (!res.ok) return Promise.reject(`Error ${res.status}`);
-                return res.json() as Promise<Profile>;
             })
-            .then(setData)
-            .catch(() => setData({ name: "", email: "", phone: "" }))
             .finally(() => setLoading(false));
-    }, [token]);
+    }, []);
 
-    const save = () => {
+    const saveProfile = async () => {
         if (!data.name || !data.email) {
-            setSnackbar({ open: true, message: "Имя и email обязательны", severity: "error" });
+            setSnackbar({
+                open: true,
+                message: "Имя и email обязательны",
+                severity: "error",
+            });
             return;
         }
-
-        fetch(`${import.meta.env.VITE_API_URL}/users/profile`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    logout();
-                    navigate("/signin", { replace: true });
-                    return;
-                }
-                if (!res.ok) throw new Error(`Error ${res.status}`);
-                setSnackbar({ open: true, message: "Профиль обновлён", severity: "success" });
-                setEdit(false);
-            })
-            .catch(() => {
-                setSnackbar({ open: true, message: "Ошибка при сохранении", severity: "error" });
+        try {
+            await updateProfile(data);
+            setSnackbar({
+                open: true,
+                message: "Профиль обновлён",
+                severity: "success",
             });
+            setEdit(false);
+        } catch {
+            setSnackbar({
+                open: true,
+                message: "Ошибка при сохранении профиля",
+                severity: "error",
+            });
+        }
     };
 
-    const changePassword = () => {
-        if (!password || password !== confirm) {
-            setSnackbar({ open: true, message: "Пароли не совпадают", severity: "error" });
+    const submitPassword = async () => {
+        if (!oldPassword || !newPassword) {
+            setSnackbar({
+                open: true,
+                message: "Оба поля обязательны",
+                severity: "error",
+            });
             return;
         }
-
-        fetch(`${import.meta.env.VITE_API_URL}/users/password`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ password }),
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    logout();
-                    navigate("/signin", { replace: true });
-                    return;
-                }
-                if (!res.ok) throw new Error(`Error ${res.status}`);
-                setSnackbar({ open: true, message: "Пароль обновлён", severity: "success" });
-                setPassword("");
-                setConfirm("");
-            })
-            .catch(() => {
-                setSnackbar({ open: true, message: "Ошибка при смене пароля", severity: "error" });
+        if (newPassword !== confirm) {
+            setSnackbar({
+                open: true,
+                message: "Пароли не совпадают",
+                severity: "error",
             });
+            return;
+        }
+        try {
+            await changePassword(oldPassword, newPassword);
+            setSnackbar({
+                open: true,
+                message: "Пароль обновлён",
+                severity: "success",
+            });
+            setOldPassword("");
+            setNewPassword("");
+            setConfirm("");
+        } catch (err: any) {
+            setSnackbar({
+                open: true,
+                message: err.response?.data?.message || "Ошибка при смене пароля",
+                severity: "error",
+            });
+        }
     };
 
     if (loading) {
@@ -133,7 +133,7 @@ export default function ProfilePage() {
                     avatar={<Avatar>{data.name.charAt(0).toUpperCase()}</Avatar>}
                     title="Профиль"
                     action={
-                        <Button onClick={() => setEdit(e => !e)}>
+                        <Button onClick={() => setEdit((e) => !e)}>
                             {edit ? "Просмотр" : "Редактировать"}
                         </Button>
                     }
@@ -145,36 +145,48 @@ export default function ProfilePage() {
                                 label="Имя"
                                 fullWidth
                                 value={data.name}
-                                onChange={e => setData(d => ({ ...d, name: e.target.value }))}
+                                onChange={(e) =>
+                                    setData((d) => ({ ...d, name: e.target.value }))
+                                }
                             />
                             <TextField
                                 label="Email"
                                 type="email"
                                 fullWidth
                                 value={data.email}
-                                onChange={e => setData(d => ({ ...d, email: e.target.value }))}
+                                onChange={(e) =>
+                                    setData((d) => ({ ...d, email: e.target.value }))
+                                }
                             />
                             <TextField
                                 label="Телефон"
                                 fullWidth
-                                value={data.phone || ""}
-                                onChange={e => setData(d => ({ ...d, phone: e.target.value }))}
+                                value={data.phone ?? ""}
+                                onChange={(e) =>
+                                    setData((d) => ({ ...d, phone: e.target.value }))
+                                }
                             />
                             <Box display="flex" justifyContent="flex-end" mt={2}>
                                 <Button onClick={() => setEdit(false)} sx={{ mr: 1 }}>
                                     Отмена
                                 </Button>
-                                <Button variant="contained" onClick={save}>
+                                <Button variant="contained" onClick={saveProfile}>
                                     Сохранить
                                 </Button>
                             </Box>
                         </Box>
                     ) : (
                         <Box display="grid" gap={1}>
-                            <Typography><strong>Имя:</strong> {data.name}</Typography>
-                            <Typography><strong>Email:</strong> {data.email}</Typography>
+                            <Typography>
+                                <strong>Имя:</strong> {data.name}
+                            </Typography>
+                            <Typography>
+                                <strong>Email:</strong> {data.email}
+                            </Typography>
                             {data.phone && (
-                                <Typography><strong>Телефон:</strong> {data.phone}</Typography>
+                                <Typography>
+                                    <strong>Телефон:</strong> {data.phone}
+                                </Typography>
                             )}
                         </Box>
                     )}
@@ -186,21 +198,28 @@ export default function ProfilePage() {
                 <CardContent>
                     <Box display="grid" gap={2}>
                         <TextField
+                            label="Старый пароль"
+                            type="password"
+                            fullWidth
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                        />
+                        <TextField
                             label="Новый пароль"
                             type="password"
                             fullWidth
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
                         />
                         <TextField
                             label="Повторите пароль"
                             type="password"
                             fullWidth
                             value={confirm}
-                            onChange={e => setConfirm(e.target.value)}
+                            onChange={(e) => setConfirm(e.target.value)}
                         />
                         <Box display="flex" justifyContent="flex-end">
-                            <Button variant="contained" onClick={changePassword}>
+                            <Button variant="contained" onClick={submitPassword}>
                                 Обновить пароль
                             </Button>
                         </Box>
@@ -211,9 +230,12 @@ export default function ProfilePage() {
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={4000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
             >
-                <Alert severity={snackbar.severity} onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
+                <Alert
+                    severity={snackbar.severity}
+                    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+                >
                     {snackbar.message}
                 </Alert>
             </Snackbar>

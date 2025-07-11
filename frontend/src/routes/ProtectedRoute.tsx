@@ -1,26 +1,34 @@
-// src/routes/ProtectedRoute.tsx
+import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
+import { CircularProgress, Box } from "@mui/material";
 
-interface Props {
-    role?: "admin";
+interface ProtectedRouteProps {
+    role?: "user" | "admin";
 }
 
-export default function ProtectedRoute({ role }: Props) {
-    const { user, isLoading } = useAuth();
+export default function ProtectedRoute({ role }: ProtectedRouteProps) {
+    const { user, initialized } = useAuth();
 
-    if (isLoading) {
+    // Ждём инициации (чтения из localStorage)
+    if (!initialized) {
         return (
-            <Box sx={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center" }}>
+            <Box display="flex" justifyContent="center" mt={8}>
                 <CircularProgress />
             </Box>
         );
     }
 
-    if (!user) return <Navigate to="/signin" replace />;
-    if (role && user.role !== role) return <Navigate to="/unauthorized" replace />;
+    // Если не залогинен — на вход
+    if (!user) {
+        return <Navigate to="/signin" replace />;
+    }
 
+    // Если передана роль, проверяем
+    if (role && user.role !== role) {
+        return <Navigate to="/unauthorized" replace />;
+    }
+
+    // Всё ок — рендерим вложенные маршруты
     return <Outlet />;
 }

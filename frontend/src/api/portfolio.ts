@@ -1,6 +1,5 @@
+import api from "./base";
 import { PortfolioItem } from "../types";
 
-export async function getPortfolio() {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/portfolio`);
-    return res.json() as Promise<PortfolioItem[]>;
-}
+export const getPortfolio = () =>
+    api.get<PortfolioItem[]>("/portfolio").then((res) => res.data);

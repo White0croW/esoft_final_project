@@ -55,3 +55,5 @@ export async function authMiddleware(
         return res.status(500).json({ message: "Internal server error" });
     }
 }
+
+
