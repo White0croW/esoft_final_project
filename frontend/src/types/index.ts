@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export interface User {
     id: number;
     name: string;
@@ -16,12 +18,29 @@ export interface UserProfile {
 }
 
 export interface BarberShop {
+    masterName: ReactNode;
     id: number;
     name: string;
     address: string;
     lat: number;
     lon: number;
-    masterName: string;
+    barbers: Barber[];
+}
+
+export interface Barber {
+    id: number;
+    name: string;
+    specialization: string | null;
+    rating: number;
+    services: Service[];
+}
+
+export interface Service {
+    id: number;
+    name: string;
+    description: string | null;
+    duration: number;
+    price: number;
 }
 
 export interface PortfolioItem {

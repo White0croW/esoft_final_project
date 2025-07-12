@@ -8,11 +8,18 @@ import userRoutes from "./routes/user.routes";
 import barbershopsRouter from "./routes/barbershops.routes";
 import portfolioRouter from "./routes/portfolio.routes";
 import dadataRoutes from "./routes/dadata.routes";
+import appointmentRoutes from "./routes/appointment.routes";
 
 dotenv.config();
 const app = express();
 
-app.use(cors());
+app.use(
+    cors({
+        origin: "http://localhost:3000", // Адрес фронта
+        methods: ["GET", "POST", "PUT", "DELETE"],
+        credentials: true,
+    })
+);
 app.use(express.json());
 
 // 1) Роуты API
@@ -21,6 +28,7 @@ app.use("/users", userRoutes);
 app.use("/barbershops", barbershopsRouter);
 app.use("/portfolio", portfolioRouter);
 app.use("/api", dadataRoutes);
+app.use("/appointments", appointmentRoutes);
 
 // 2) Раздаём фронтенд (папка dist, которую создал vite build)
 //    предполагаем вот такую структуру:

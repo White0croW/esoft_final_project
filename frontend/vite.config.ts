@@ -21,10 +21,8 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            // все запросы, начинающиеся с /auth, /services, /barbers, /appointments, /users
-            // будут проксироваться на ваш бэкенд
-            "^/(auth|services|barbers|appointments|users)": {
-                target: process.env.VITE_API_URL,
+            "/api": {
+                target: "http://localhost:4000",
                 changeOrigin: true,
             },
         },

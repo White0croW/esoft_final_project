@@ -38,6 +38,7 @@ export default function Layout() {
 
     const links: LinkConfig[] = [
         { to: "/", label: "Главная", public: true },
+        { to: "/barbershops", label: "Барбершопы", public: true },
         { to: "/profile", label: "Профиль", role: "user" },
     ];
 

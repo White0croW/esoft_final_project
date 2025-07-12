@@ -24,7 +24,6 @@ export function signJwt(
     expiresIn: string = "1h"
 ): string {
     const options: SignOptions = { expiresIn };
-    // getSecret() точно возвращает string, TS уже не шумит
     return jwt.sign(payload, getSecret(), options);
 }
 

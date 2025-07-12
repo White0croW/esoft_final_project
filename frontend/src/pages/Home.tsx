@@ -15,8 +15,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { useAuth } from "../contexts/AuthContext";
-import { getBarbershops } from "../api/barbershops";
-import { getPortfolio } from "../api/portfolio";
+import { fetchBarbershops } from "../api/barbershops";
+import { fetchPortfolio } from "../api/portfolio";
 import { BarberShop, PortfolioItem } from "../types";
 
 // ESM-импорты иконок Leaflet
@@ -67,9 +67,9 @@ export default function Home() {
 
     // Загрузка портфолио и всех барбершопов
     useEffect(() => {
-        getPortfolio().then(setPortfolio).catch(console.error);
+        fetchPortfolio().then(setPortfolio).catch(console.error);
         if (token) {
-            getBarbershops(token)
+            fetchBarbershops()
                 .then((data) => {
                     setShops(data);
                     setDisplayedShops(data);
