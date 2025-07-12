@@ -5,9 +5,6 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
-import appointmentRoutes from "./routes/appointment.routes";
-import serviceRoutes from "./routes/service.routes";
-import barberRoutes from "./routes/barber.routes";
 import barbershopsRouter from "./routes/barbershops.routes";
 import portfolioRouter from "./routes/portfolio.routes";
 import dadataRoutes from "./routes/dadata.routes";
@@ -21,9 +18,6 @@ app.use(express.json());
 // 1) Роуты API
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
-app.use("/appointments", appointmentRoutes);
-app.use("/services", serviceRoutes);
-app.use("/barbers", barberRoutes);
 app.use("/barbershops", barbershopsRouter);
 app.use("/portfolio", portfolioRouter);
 app.use("/api", dadataRoutes);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
     AppBar,
@@ -34,11 +34,7 @@ export default function Layout() {
 
     const links: LinkConfig[] = [
         { to: "/", label: "Главная", public: true },
-        { to: "/services", label: "Услуги", public: true },
-        { to: "/barbers", label: "Мастера", public: true },
-        { to: "/appointments", label: "Мои записи", role: "user" },
         { to: "/profile", label: "Профиль", role: "user" },
-        { to: "/admin", label: "Админ-панель", role: "admin" },
     ];
 
     const visibleLinks = links.filter((link) => {
