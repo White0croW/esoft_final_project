@@ -17,6 +17,9 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 
 const drawerWidth = 240;
 
@@ -28,6 +31,7 @@ interface LinkConfig {
 }
 
 export default function Layout() {
+    const { mode, toggleMode } = useTheme();
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
     const toggleDrawer = () => setMobileOpen((o) => !o);
@@ -142,6 +146,9 @@ export default function Layout() {
                                 </IconButton>
                             </Tooltip>
                         )}
+                        <IconButton color="inherit" onClick={toggleMode}>
+                            {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
                     </Box>
                 </Toolbar>
             </AppBar>
