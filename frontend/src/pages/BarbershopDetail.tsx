@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBarbershopById } from "../api/barbershops";
 import { BarberShop, Barber } from "../types";
-import { Grid, Card, CardContent, Typography, Button } from "@mui/material";
+import { Grid, Card, CardContent, Typography, Button, Box } from "@mui/material";
 
 const BarbershopDetail: React.FC = () => {
     const { id } = useParams();
@@ -16,7 +16,7 @@ const BarbershopDetail: React.FC = () => {
     if (isError) return <div>Ошибка загрузки</div>;
 
     return (
-        <div>
+        <Box sx={{ maxWidth: "60%", margin: "40px auto", mt: 4, px: 2 }}>
             <Typography variant="h4">{barbershop?.name}</Typography>
             <Typography>{barbershop?.address}</Typography>
             <Typography>Мастера:</Typography>
@@ -44,7 +44,7 @@ const BarbershopDetail: React.FC = () => {
                     </Grid>
                 )}
             </Grid>
-        </div>
+        </Box>
     );
 };
 

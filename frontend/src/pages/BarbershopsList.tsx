@@ -60,7 +60,7 @@ export default function BarbershopsList() {
     if (isLoading) return <div>Загрузка...</div>;
 
     return (
-        <Box sx={{ maxWidth: "80%", margin: "40px auto", mt: 4, px: 2 }}>
+        <Box sx={{ maxWidth: "60%", margin: "40px auto", mt: 4, px: 2 }}>
             {/* Заголовок */}
             <Typography variant="h4" gutterBottom>
                 {userLocation ? "Ближайшие барбершопы" : "Популярные барбершопы"}

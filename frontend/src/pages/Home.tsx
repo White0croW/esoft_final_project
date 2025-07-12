@@ -69,7 +69,7 @@ export default function Home() {
     useEffect(() => {
         fetchPortfolio().then(setPortfolio).catch(console.error);
         if (token) {
-            fetchBarbershops()
+            fetchBarbershops({})
                 .then((data) => {
                     setShops(data);
                     setDisplayedShops(data);
