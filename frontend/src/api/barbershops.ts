@@ -26,7 +26,7 @@ export const fetchBarbershops = async ({
     return response.data;
 };
 
-export const fetchBarbershopById = async (id: number): Promise<BarberShop> => {
-    const response = await api.get(`/barbershops/${id}`);
-    return response.data;
+export const fetchBarbershopById = async (id: number) => {
+  const response = await api.get(`/barbershops/${id}`);
+  return response.data;
 };

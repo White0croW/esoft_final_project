@@ -23,37 +23,21 @@ app.use(
 app.use(express.json());
 
 // 1) Роуты API
-app.use("/auth", authRoutes);
-app.use("/users", userRoutes);
-app.use("/barbershops", barbershopsRouter);
-app.use("/portfolio", portfolioRouter);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/barbershops", barbershopsRouter);
+app.use("/api/portfolio", portfolioRouter);
 app.use("/api", dadataRoutes);
-app.use("/appointments", appointmentRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
-// 2) Раздаём фронтенд (папка dist, которую создал vite build)
-//    предполагаем вот такую структуру:
-//    /backend
-//      /dist             ← собранный фронт (npm run build в frontend)
-//      /src
-//      package.json
-//    либо, если dist лежит в ../frontend/dist — скорректируйте путь
+/// Статика фронта
 const distPath = path.resolve(__dirname, "../../frontend/dist");
 app.use(express.static(distPath));
 
-// 3) На все остальные GET возвращаем index.html
-//    это нужно, чтобы любые router-пути на фронтенде работали по прямой ссылке
-app.get("*", (_req: Request, res: Response) => {
+// Все остальные GET-запросы — на index.html
+app.get("*", (_, res) => {
     res.sendFile(path.join(distPath, "index.html"));
 });
 
-// 4) Глобальный 404/500
-app.use((req: Request, res: Response) => {
-    res.status(404).json({ message: "Route not found" });
-});
-app.use((err: any, _: Request, res: Response, __: NextFunction) => {
-    console.error(err);
-    res.status(err.status || 500).json({ message: err.message || "Internal error" });
-});
-
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

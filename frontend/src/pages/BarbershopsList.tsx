@@ -60,7 +60,7 @@ export default function BarbershopsList() {
     if (isLoading) return <div>Загрузка...</div>;
 
     return (
-        <Box sx={{ mt: 4, px: 2 }}>
+        <Box sx={{ maxWidth: "80%", margin: "40px auto", mt: 4, px: 2 }}>
             {/* Заголовок */}
             <Typography variant="h4" gutterBottom>
                 {userLocation ? "Ближайшие барбершопы" : "Популярные барбершопы"}
@@ -69,7 +69,7 @@ export default function BarbershopsList() {
             {/* Список карточек */}
             <Grid container spacing={3}>
                 {barbershops.map((barbershop) => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={barbershop.id}>
+                    <Grid size={{ xs: 8, sm: 6, md: 4 }} key={barbershop.id}>
                         <Card
                             sx={{
                                 height: "100%",
@@ -82,7 +82,7 @@ export default function BarbershopsList() {
                             <CardMedia
                                 component="img"
                                 height="180"
-                                image={`https://picsum.photos/seed/ ${barbershop.id}/400/250`}
+                                image={`https://picsum.dev//static/${barbershop.id}400/250`}
                                 alt={barbershop.name}
                                 sx={{ objectFit: "cover" }}
                             />
