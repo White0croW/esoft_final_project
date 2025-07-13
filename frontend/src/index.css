@@ -6,9 +6,5 @@ body {
 }
 
 .root {
-    padding: 1rem;
+    padding: 0;
 }
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

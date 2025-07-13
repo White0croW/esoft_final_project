@@ -73,9 +73,9 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
             return res.status(404).json({ error: "Услуга не найдена" });
         }
 
-        // 2. Получить график работы барбера (упрощённая версия)
+        // 2. Получить график работы барбера
         const today = new Date(date);
-        const dayOfWeek = today.getDay(); // 0-воскресенье, 1-понедельник и т.д.
+        const dayOfWeek = today.getDay();
         const dayNames = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
         const todayName = dayNames[dayOfWeek] as keyof typeof DayOfWeek;
 
@@ -114,10 +114,10 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
             barberSchedule.startTime || "09:00",
             barberSchedule.endTime || "21:00",
             service.duration,
-            service.duration // Шаг = длительности услуги
+            service.duration
         );
 
-        // 5. Улучшенная фильтрация занятых слотов
+        // 5. Фильтрация занятых слотов
         const availableSlots = allSlots.filter(slot => {
             return !existingAppointments.some(app => {
                 const slotStart = slot.start;
@@ -207,3 +207,79 @@ export const createAppointment = [
         }
     }
 ];
+
+export const getMyAppointments = async (req: Request, res: Response) => {
+    const userId = (req as any).user.userId;
+
+    try {
+        const appointments = await prisma.appointment.findMany({
+            where: { userId },
+            include: {
+                service: true,
+                barber: {
+                    include: {
+                        barbershop: true  // Правильное отношение через барбера
+                    }
+                }
+            }
+        });
+
+        const result = appointments.map(app => ({
+            id: app.id,
+            date: app.date.toISOString(),
+            startTime: app.startTime,
+            endTime: app.endTime,
+            status: app.status,
+            service: {
+                id: app.service.id,
+                name: app.service.name
+            },
+            barber: {
+                id: app.barber.id,
+                name: app.barber.name
+            },
+            // Получаем барбершоп через барбера
+            barbershop: {
+                id: app.barber.barbershop?.id,
+                name: app.barber.barbershop?.name,
+                address: app.barber.barbershop?.address
+            }
+        }));
+
+        res.json(result);
+    } catch (error) {
+        console.error("Ошибка получения записей:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+};
+
+export const cancelAppointment = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+
+    try {
+        // Проверка принадлежности записи пользователю
+        const appointment = await prisma.appointment.findFirst({
+            where: {
+                id: parseInt(id),
+                userId,
+                status: { in: ["NEW", "CONFIRMED"] } // Можно отменять только новые или подтвержденные
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ message: "Запись не найдена или недоступна для отмены" });
+        }
+
+        // Обновляем статус записи
+        await prisma.appointment.update({
+            where: { id: parseInt(id) },
+            data: { status: "CANCELED" }
+        });
+
+        res.json({ message: "Запись успешно отменена" });
+    } catch (error) {
+        console.error("Ошибка отмены записи:", error);
+        res.status(500).json({ message: "Ошибка при отмене записи" });
+    }
+};

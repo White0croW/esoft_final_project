@@ -10,10 +10,14 @@ import {
     Pagination,
     Box,
     Stack,
+    Skeleton,
+    Rating,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBarbershops } from "../api/barbershops";
 import { BarberShop } from "../types";
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import StarIcon from '@mui/icons-material/Star';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -57,67 +61,175 @@ export default function BarbershopsList() {
         setPage(value);
     };
 
-    if (isLoading) return <div>Загрузка...</div>;
-
     return (
-        <Box sx={{ maxWidth: "60%", margin: "40px auto", mt: 4, px: 2 }}>
+        <Box sx={{ maxWidth: { xs: "95%", md: "85%", lg: "75%" }, margin: "40px auto", px: 2 }}>
             {/* Заголовок */}
-            <Typography variant="h4" gutterBottom>
+            <Typography
+                variant="h4"
+                gutterBottom
+                sx={{
+                    fontWeight: 700,
+                    mb: 4,
+                    color: 'text.primary',
+                    textAlign: 'center',
+                    fontSize: { xs: '1.8rem', sm: '2.2rem' }
+                }}
+            >
                 {userLocation ? "Ближайшие барбершопы" : "Популярные барбершопы"}
             </Typography>
 
             {/* Список карточек */}
-            <Grid container spacing={3}>
-                {barbershops.map((barbershop) => (
-                    <Grid size={{ xs: 8, sm: 6, md: 4 }} key={barbershop.id}>
-                        <Card
-                            sx={{
+            {isLoading ? (
+                <Grid container spacing={3}>
+                    {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+                        <Grid size={{ xs: 8, sm: 6, md: 4 }} key={index}>
+                            <Card sx={{
                                 height: "100%",
-                                borderRadius: 8,
+                                borderRadius: 3,
                                 boxShadow: 3,
-                                transition: "transform 0.2s",
-                                "&:hover": { transform: "scale(1.02)" },
-                            }}
-                        >
-                            <CardMedia
-                                component="img"
-                                height="180"
-                                image={`https://picsum.dev//static/${barbershop.id}400/250`}
-                                alt={barbershop.name}
-                                sx={{ objectFit: "cover" }}
-                            />
-                            <CardContent>
-                                <Typography variant="h5" gutterBottom>
-                                    {barbershop.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {barbershop.address}
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    fullWidth
-                                    href={`/barbershops/${barbershop.id}`}
-                                    sx={{ mt: 2 }}
+                                overflow: 'hidden'
+                            }}>
+                                <Skeleton variant="rectangular" height={180} />
+                                <CardContent>
+                                    <Skeleton variant="text" width="80%" height={32} />
+                                    <Skeleton variant="text" width="60%" height={24} />
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                        <Skeleton variant="circular" width={24} height={24} />
+                                        <Skeleton variant="text" width="40%" sx={{ ml: 1 }} />
+                                    </Box>
+                                    <Skeleton
+                                        variant="rectangular"
+                                        width="100%"
+                                        height={40}
+                                        sx={{ mt: 2, borderRadius: 2 }}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            ) : (
+                <>
+                    <Grid container spacing={3}>
+                        {barbershops.map((barbershop) => (
+                            <Grid size={{ xs: 8, sm: 6, md: 4 }} key={barbershop.id} sx={{ display: 'flex' }}>
+                                <Card
+                                    sx={{
+                                        height: "100%",
+                                        borderRadius: 3,
+                                        boxShadow: 3,
+                                        transition: "all 0.3s ease",
+                                        "&:hover": {
+                                            transform: "translateY(-5px)",
+                                            boxShadow: 6
+                                        },
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        width: '100%',
+                                        overflow: 'hidden',
+                                    }}
                                 >
-                                    Подробнее
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
+                                    <Box sx={{ position: 'relative' }}>
+                                        <CardMedia
+                                            component="img"
+                                            height="200"
+                                            image={`https://picsum.dev//static/${barbershop.id}400/250`}
+                                            alt={barbershop.name}
+                                            sx={{
+                                                objectFit: "cover",
+                                                width: '100%',
+                                            }}
+                                        />
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                height: '60%',
+                                                background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
+                                            }}
+                                        />
+                                    </Box>
+                                    <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                                        <Typography
+                                            variant="h5"
+                                            gutterBottom
+                                            sx={{
+                                                fontWeight: 700,
+                                                color: 'text.primary',
+                                                mb: 1.5
+                                            }}
+                                        >
+                                            {barbershop.name}
+                                        </Typography>
 
-            {/* Пагинация */}
-            <Stack spacing={2} sx={{ mt: 4, mb: 8, alignItems: "center" }}>
-                <Pagination
-                    count={Math.ceil(barbershops.length / ITEMS_PER_PAGE)}
-                    page={page}
-                    onChange={handlePageChange}
-                    color="primary"
-                    shape="rounded"
-                />
-            </Stack>
+                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2.5 }}>
+                                            <LocationOnIcon
+                                                fontSize="small"
+                                                sx={{
+                                                    color: 'primary.main',
+                                                    mr: 1,
+                                                    mt: 0.5
+                                                }}
+                                            />
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    color: 'text.secondary',
+                                                    lineHeight: 1.4
+                                                }}
+                                            >
+                                                {barbershop.address}
+                                            </Typography>
+                                        </Box>
+
+                                        <Button
+                                            variant="contained"
+                                            fullWidth
+                                            href={`/barbershops/${barbershop.id}`}
+                                            sx={{
+                                                mt: 'auto',
+                                                py: 1.5,
+                                                borderRadius: 2,
+                                                fontWeight: 600,
+                                                background: 'linear-gradient(45deg, #1a2a6c 30%, #b21f1f 90%)',
+                                                '&:hover': {
+                                                    transform: 'scale(1.02)',
+                                                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                                                }
+                                            }}
+                                        >
+                                            Подробнее
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+
+                    {/* Пагинация */}
+                    <Stack spacing={2} sx={{ mt: 6, mb: 4, alignItems: "center" }}>
+                        <Pagination
+                            count={Math.ceil(barbershops.length / ITEMS_PER_PAGE)}
+                            page={page}
+                            onChange={handlePageChange}
+                            color="primary"
+                            shape="rounded"
+                            size="large"
+                            sx={{
+                                '& .MuiPaginationItem-root': {
+                                    fontSize: '1rem',
+                                    fontWeight: 600
+                                },
+                                '& .Mui-selected': {
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                                }
+                            }}
+                        />
+                    </Stack>
+                </>
+            )}
         </Box>
     );
 }
