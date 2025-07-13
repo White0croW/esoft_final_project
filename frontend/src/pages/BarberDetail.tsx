@@ -35,8 +35,7 @@ const BarberDetail: React.FC = () => {
         error: barberError
     } = useQuery<Barber>({
         queryKey: ["barber", id],
-        queryFn: () => fetchBarberById(Number(id)),
-        enabled: !!id, // Запускать только если id существует
+        queryFn: () => fetchBarberById(Number(id))
     });
 
     const handleBookAppointment = async (serviceId: number) => {

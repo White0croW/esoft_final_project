@@ -9,9 +9,7 @@ export const getBarberById = async (req: Request, res: Response) => {
     try {
         const barber = await prisma.barber.findUnique({
             where: { id },
-            include: {
-                services: true, // Прямая загрузка услуг
-            },
+            include: { services: true },
         });
 
         if (!barber) {
@@ -21,6 +19,10 @@ export const getBarberById = async (req: Request, res: Response) => {
         res.json(barber);
     } catch (error) {
         console.error("Ошибка при получении мастера:", error);
-        res.status(500).json({ error: "Ошибка сервера" });
+        // Всегда возвращаем JSON при ошибках!
+        res.status(500).json({
+            error: "Ошибка сервера",
+            details: error
+        });
     }
 };
