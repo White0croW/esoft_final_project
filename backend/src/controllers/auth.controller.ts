@@ -95,7 +95,8 @@ export async function me(req: Request, res: Response) {
                 createdAt: true,
                 appointments: {
                     include: { barber: true, service: true },
-                    orderBy: [{ date: "desc" }, { time: "desc" }],
+                    // Исправленная сортировка
+                    orderBy: [{ date: "desc" }, { startTime: "desc" }],
                 },
             },
         });

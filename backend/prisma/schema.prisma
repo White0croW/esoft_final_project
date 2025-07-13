@@ -19,6 +19,16 @@ enum AppointmentStatus {
   CANCELED
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 model User {
   id           Int           @id @default(autoincrement())
   name         String
@@ -41,7 +51,7 @@ model Service {
   price        Float
   createdAt    DateTime      @default(now()) @map("created_at")
 
-  barbers      Barber[]      // Обратная связь
+  barbers      Barber[]      @relation("BarberServices")
   appointments Appointment[]
 
   @@map("services")
@@ -56,8 +66,21 @@ model Barbershop {
   createdAt DateTime  @default(now()) @map("created_at")
 
   barbers   Barber[]
+  schedule  BarbershopSchedule[]
 
   @@map("barbershops")
+}
+
+model BarbershopSchedule {
+  id           Int       @id @default(autoincrement())
+  barbershopId Int
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  dayOfWeek    DayOfWeek
+  openingTime  String    // "HH:MM"
+  closingTime  String    // "HH:MM"
+  isWorking    Boolean   @default(true)
+
+  @@map("barbershop_schedules")
 }
 
 model Barber {
@@ -70,10 +93,23 @@ model Barber {
   barbershopId   Int?
   barbershop     Barbershop?      @relation(fields: [barbershopId], references: [id])
   
-  services       Service[]        // Связь с услугами
+  services       Service[]        @relation("BarberServices")
   appointments   Appointment[]
+  schedule       BarberSchedule[]
 
   @@map("barbers")
+}
+
+model BarberSchedule {
+  id          Int       @id @default(autoincrement())
+  barberId    Int
+  barber      Barber    @relation(fields: [barberId], references: [id])
+  dayOfWeek   DayOfWeek
+  startTime   String    // "HH:MM"
+  endTime     String    // "HH:MM"
+  isWorking   Boolean   @default(true)
+
+  @@map("barber_schedules")
 }
 
 model Appointment {
@@ -82,7 +118,8 @@ model Appointment {
   serviceId  Int
   barberId   Int
   date       DateTime
-  time       String            // "HH:MM"
+  startTime  String            // "HH:MM"
+  endTime    String            // "HH:MM" (вычисляется на основе длительности услуги)
   status     AppointmentStatus @default(NEW)
   createdAt  DateTime          @default(now()) @map("created_at")
 
