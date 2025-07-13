@@ -41,6 +41,7 @@ model Service {
   price        Float
   createdAt    DateTime      @default(now()) @map("created_at")
 
+  barbers      Barber[]      // Обратная связь
   appointments Appointment[]
 
   @@map("services")
@@ -65,10 +66,11 @@ model Barber {
   specialization String?
   rating         Float            @default(0.0)
   createdAt      DateTime         @default(now()) @map("created_at")
-
+  
   barbershopId   Int?
   barbershop     Barbershop?      @relation(fields: [barbershopId], references: [id])
-
+  
+  services       Service[]        // Связь с услугами
   appointments   Appointment[]
 
   @@map("barbers")

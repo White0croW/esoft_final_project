@@ -11,37 +11,33 @@ export const getBarbershops = async (req: Request, res: Response) => {
         let barbershops;
 
         if (popular === "true") {
+            // Популярные барбершопы 
             barbershops = await prisma.barbershop.findMany({
-                orderBy: { name: "desc" },
+                orderBy: { name: "asc" },
+                include: { barbers: true },
                 skip: (Number(page) - 1) * Number(limit),
                 take: Number(limit),
-                include: { barbers: true },
             });
         } else if (lat && lon) {
+            // Фильтрация по радиусу
             const userLat = parseFloat(lat as string);
             const userLon = parseFloat(lon as string);
 
-            // Фильтрация по радиусу (например, 50 км)
             barbershops = await prisma.barbershop.findMany({
                 include: { barbers: true },
                 where: {
-                    lat: {
-                        gte: userLat - 0.5,
-                        lte: userLat + 0.5,
-                    },
-                    lon: {
-                        gte: userLon - 0.5,
-                        lte: userLon + 0.5,
-                    },
+                    lat: { gte: userLat - 0.5, lte: userLat + 0.5 },
+                    lon: { gte: userLon - 0.5, lte: userLon + 0.5 },
                 },
                 skip: (Number(page) - 1) * Number(limit),
                 take: Number(limit),
             });
         } else {
+            // Все барбершопы без фильтра
             barbershops = await prisma.barbershop.findMany({
+                include: { barbers: true },
                 skip: (Number(page) - 1) * Number(limit),
                 take: Number(limit),
-                include: { barbers: true },
             });
         }
 

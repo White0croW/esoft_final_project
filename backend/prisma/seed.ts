@@ -1,4 +1,3 @@
-// prisma/seed.ts
 import { PrismaClient, Role, AppointmentStatus } from "@prisma/client";
 import bcrypt from "bcrypt";
 
@@ -15,6 +14,7 @@ async function main() {
 
     // 1) Барбершопы
     const shopsData = [
+        // Москва
         {
             name: "Downtown Cuts",
             address: "ул. Ленина, 10, Москва",
@@ -27,15 +27,27 @@ async function main() {
             lat: 55.780,
             lon: 37.642,
         },
+        // Тюмень
+        {
+            name: "Stray Kids",
+            address: "ул. Республики, 196, Тюмень",
+            lat: 57.1432,
+            lon: 61.4385,
+        },
+        {
+            name: "Tumen Style",
+            address: "пр. Победы, 50, Тюмень",
+            lat: 57.1425,
+            lon: 61.4370,
+        },
     ];
     const barbershops = await Promise.all(
-        shopsData.map((data) =>
-            prisma.barbershop.create({ data })
-        )
+        shopsData.map((data) => prisma.barbershop.create({ data }))
     );
 
     // 2) Мастера
     const barbersData = [
+        // Москва
         {
             name: "John Doe",
             specialization: "Haircut",
@@ -54,11 +66,22 @@ async function main() {
             rating: 4.2,
             barbershopId: barbershops[0].id,
         },
+        // Тюмень
+        {
+            name: "Алексей Петров",
+            specialization: "Стрижка под ноль",
+            rating: 4.7,
+            barbershopId: barbershops[2].id,
+        },
+        {
+            name: "Елена Смирнова",
+            specialization: "Укладка",
+            rating: 4.9,
+            barbershopId: barbershops[3].id,
+        },
     ];
     const barbers = await Promise.all(
-        barbersData.map((data) =>
-            prisma.barber.create({ data })
-        )
+        barbersData.map((data) => prisma.barber.create({ data }))
     );
 
     // 3) Услуги
@@ -67,16 +90,17 @@ async function main() {
         { name: "Beard Trim", description: "Shape beard", duration: 20, price: 15.0 },
         { name: "Hair Coloring", description: "Full color", duration: 90, price: 60.0 },
         { name: "Kids Haircut", description: "Kids style", duration: 25, price: 20.0 },
+        // Новые услуги для Тюмени
+        { name: "Стрижка под ноль", description: "Стильная стрижка", duration: 45, price: 35.0 },
+        { name: "Укладка", description: "Профессиональная укладка", duration: 30, price: 25.0 },
     ];
     const services = await Promise.all(
-        servicesData.map((data) =>
-            prisma.service.create({ data })
-        )
+        servicesData.map((data) => prisma.service.create({ data }))
     );
 
     // 4) Пользователи (user + admin)
     const hash = await bcrypt.hash("password123", 10);
-    const [user, admin] = await Promise.all([
+    const [user, admin, tyumenUser] = await Promise.all([
         prisma.user.create({
             data: {
                 name: "Test User",
@@ -94,19 +118,26 @@ async function main() {
                 role: Role.ADMIN,
             },
         }),
+        prisma.user.create({
+            data: {
+                name: "Тюменский Клиент",
+                email: "tyumen@example.com",
+                password: hash,
+                phone: "+79991234567",
+                role: Role.USER,
+            },
+        }),
     ]);
 
     // 5) Портфолио
     const portfolioData = [
-        { imageUrl: "/portfolio/1.jpg", description: "Классическая стрижка" },
-        { imageUrl: "/portfolio/2.jpg", description: "Барбершоп Fade" },
-        { imageUrl: "/portfolio/3.jpg", description: "Укладка бороды" },
-        { imageUrl: "/portfolio/4.jpg", description: "Детская стрижка" },
+        { imageUrl: "/classic.jpg", description: "Классическая стрижка" },
+        { imageUrl: "/fade.jpg", description: "Барбершоп Fade" },
+        { imageUrl: "/cut.jpg", description: "Укладка бороды" },
+        { imageUrl: "/kids.jpg", description: "Детская стрижка" },
     ];
     await Promise.all(
-        portfolioData.map((data) =>
-            prisma.portfolio.create({ data })
-        )
+        portfolioData.map((data) => prisma.portfolio.create({ data }))
     );
 
     // 6) Записи
@@ -117,6 +148,7 @@ async function main() {
 
     await prisma.appointment.createMany({
         data: [
+            // Москва
             {
                 userId: user.id,
                 barberId: barbers[0].id,
@@ -131,6 +163,23 @@ async function main() {
                 serviceId: services[1].id,
                 date: threeDays,
                 time: "14:30",
+                status: AppointmentStatus.NEW,
+            },
+            // Тюмень
+            {
+                userId: tyumenUser.id,
+                barberId: barbers[3].id,
+                serviceId: services[4].id,
+                date: tomorrow,
+                time: "11:00",
+                status: AppointmentStatus.CONFIRMED,
+            },
+            {
+                userId: tyumenUser.id,
+                barberId: barbers[4].id,
+                serviceId: services[5].id,
+                date: threeDays,
+                time: "15:00",
                 status: AppointmentStatus.NEW,
             },
         ],
