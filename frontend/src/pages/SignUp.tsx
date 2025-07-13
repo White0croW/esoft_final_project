@@ -31,34 +31,37 @@ import {
 import { styled } from "@mui/system";
 
 // Стилизованные компоненты
-const GradientBox = styled(Box)(({ theme }) => ({
+const GradientBox = styled(Box)({
     minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-    padding: 0, // Убрали отступы
-    margin: 0,  // Убрали отступы
-}));
+    padding: 0,
+    margin: 0,
+    width: '100%',
+    height: '100%',
+});
 
 const AuthCard = styled(Paper)(({ theme }) => ({
-    borderRadius: 0, // Убрали скругления
-    boxShadow: 'none', // Убрали тень
-    width: '100%', // Занимает всю ширину
-    maxWidth: '100%', // Занимает всю ширину
-    height: '100vh', // Занимает всю высоту
+    width: '100%',
+    height: '100vh',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
+    borderRadius: 0,
+    boxShadow: 'none',
+    padding: theme.spacing(3),
     position: 'relative',
     overflow: 'auto',
+
     [theme.breakpoints.up('sm')]: {
-        borderRadius: 20, // Скругления только для десктопа
-        boxShadow: '0 15px 35px rgba(0,0,0,0.2)', // Тень только для десктопа
-        height: 'auto', // Автоматическая высота для десктопа
-        maxWidth: 500, // Максимальная ширина для десктопа
+        height: 'auto',
+        maxWidth: 500,
+        borderRadius: 20,
+        boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
         padding: theme.spacing(5),
     },
+
     '&:before': {
         content: '""',
         position: 'absolute',
@@ -169,7 +172,7 @@ export default function SignUp() {
         <GradientBox sx={{ padding: 0 }}>
             <Fade in={true} timeout={800}>
                 <Container maxWidth="sm">
-                    <AuthCard elevation={6}>
+                    <AuthCard elevation={0}>
                         <Box textAlign="center" mb={4}>
                             <AnimatedIcon>
                                 <HowToReg
