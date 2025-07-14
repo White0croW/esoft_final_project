@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 
 export enum Role {
-    USER = "USER",
-    ADMIN = "ADMIN"
+    USER = 'USER',
+    ADMIN = 'ADMIN'
 }
 
 export enum AppointmentStatus {
@@ -16,8 +16,9 @@ export interface User {
     id: number;
     name: string;
     email: string;
-    role: Role;
     phone?: string;
+    role: Role;
+    password?: string;
     createdAt: string;
 }
 
@@ -28,6 +29,9 @@ export interface UserProfile {
     phone?: string;
     token?: string;
 }
+
+export type UserCreateData = Omit<User, 'id' | 'createdAt'> & { password: string };
+export type UserUpdateData = Partial<Omit<UserCreateData, 'password'>> & { password?: string };
 
 export interface BarberShop {
     id: number;

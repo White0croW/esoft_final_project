@@ -93,7 +93,6 @@ export default function SignUp() {
     const [password2, setPassword2] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showPassword2, setShowPassword2] = useState(false);
-    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [loading, setLoading] = useState(false);
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -113,14 +112,6 @@ export default function SignUp() {
             return;
         }
 
-        if (!acceptedTerms) {
-            setSnackbar({
-                open: true,
-                message: "Пожалуйста, примите условия использования",
-                severity: "error",
-            });
-            return;
-        }
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             setSnackbar({

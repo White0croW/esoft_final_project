@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { requireRole } from "../middlewares/requireRole";
 const prisma = new PrismaClient();
@@ -10,12 +10,12 @@ r.get("/", async (_, res) => {
     res.json(items);
 });
 
-r.post("/", authMiddleware, requireRole("admin"), async (req, res) => {
+r.post("/", authMiddleware, requireRole([Role.ADMIN]), async (req, res) => {
     const item = await prisma.portfolio.create({ data: req.body });
     res.json(item);
 });
 
-r.delete("/:id", authMiddleware, requireRole("admin"), async (req, res) => {
+r.delete("/:id", authMiddleware, requireRole([Role.ADMIN]), async (req, res) => {
     await prisma.portfolio.delete({ where: { id: +req.params.id } });
     res.sendStatus(204);
 });

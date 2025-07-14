@@ -1,3 +1,4 @@
+import api from "@/api/base";
 import {
     createContext,
     useContext,
@@ -5,11 +6,20 @@ import {
     useState,
 } from "react";
 
+export enum Role {
+    USER = 'USER',
+    ADMIN = 'ADMIN'
+}
+
 export interface User {
     id: number;
     name: string;
     email: string;
-    role: "user" | "admin";
+    role: Role;
+}
+
+interface AuthProviderProps {
+    children: React.ReactNode;
 }
 
 interface AuthContextValue {
@@ -48,21 +58,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem("user", JSON.stringify(me));
     };
 
-    const login = async ({ email, password }: { email: string; password: string }) => {
-        const res = await fetch(`${API}/auth/signin`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || "Ошибка входа");
+    const login = async (creds: { email: string; password: string }) => {
+        try {
+            const response = await api.post(`${API}/auth/signin`, creds); // Передаем объект целиком
+            const { token, user } = response.data;
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user)); // Сохраняем пользователя
+            setToken(token);
+            setUser(user);
+        } catch (error) {
+            throw error;
         }
-        const { token: t } = await res.json();
-        localStorage.setItem("token", t);
-        setToken(t);
-        await fetchProfile(t);
     };
+
 
     const register = async ({ name, email, password }: { name: string; email: string; password: string }) => {
         const res = await fetch(`${API}/auth/signup`, {

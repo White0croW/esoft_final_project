@@ -10,6 +10,7 @@ import barberRouter from "./routes/barber.routes";
 import portfolioRouter from "./routes/portfolio.routes";
 import dadataRoutes from "./routes/dadata.routes";
 import appointmentRoutes from "./routes/appointment.routes";
+import adminRouter from './routes/admin.routes';
 
 dotenv.config();
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/barbers", barberRouter);
 app.use("/api/portfolio", portfolioRouter);
 app.use("/api", dadataRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use('/api/admin', adminRouter);
 
 /// Статика фронта
 const distPath = path.resolve(__dirname, "../../frontend/dist");

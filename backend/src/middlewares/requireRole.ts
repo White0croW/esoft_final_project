@@ -1,14 +1,19 @@
-// src/middleware/requireRole.ts
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
+import { Role } from '@prisma/client';
+import { AuthenticatedRequest } from '../types';
 
-export function requireRole(role: string) {
-    return (req: Request & { user?: { userId: number; role: string } }, res: Response, next: NextFunction) => {
-        if (!req.user) {
-            return res.status(401).json({ message: "Unauthorized" });
+export const requireRole = (allowedRoles: Role[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const user = (req as AuthenticatedRequest).user;
+
+        if (!user) {
+            return res.status(401).json({ message: 'Требуется авторизация' });
         }
-        if (req.user.role !== role) {
-            return res.status(403).json({ message: "Forbidden" });
+
+        if (!allowedRoles.includes(user.role)) {
+            return res.status(403).json({ message: 'Доступ запрещен' });
         }
+
         next();
     };
-}
+};

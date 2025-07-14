@@ -5,9 +5,14 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LoadingSpinner from "./components/LoadingSpinner";
+import AdminLayout from './pages/admin/AdminLayout';
+import UserList from './pages/admin/users/UserList';
+import UserForm from './pages/admin/users/UserForm';
+
 
 // Статический импорт для главной страницы
 import Home from "./pages/Home";
+import { Role } from './types';
 
 // Lazy-импорт остальных страниц
 const SignIn = lazy(() => import("./pages/SignIn"));
@@ -17,6 +22,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const BarbershopsList = lazy(() => import("./pages/BarbershopsList"));
 const BarbershopDetail = lazy(() => import("./pages/BarbershopDetail"));
 const BarberDetail = lazy(() => import("./pages/BarberDetail"));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 
 const queryClient = new QueryClient();
 
@@ -64,6 +70,21 @@ export default function App() {
                                 <Profile />
                             </Suspense>
                         } />
+                    </Route>
+
+                    {/* Админские роуты */}
+                    <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN]} />}>
+                        <Route path="/admin" element={<AdminLayout />}>
+                            <Route index element={
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <Dashboard />
+                                </Suspense>
+                            } />
+                            <Route path="users" element={<UserList />} />
+                            <Route path="users/new" element={<UserForm />} />
+                            <Route path="users/:id" element={<UserForm />} />
+                            {/* Добавим остальные сущности позже */}
+                        </Route>
                     </Route>
 
                     {/* Страница ошибки */}

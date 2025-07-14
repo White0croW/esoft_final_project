@@ -1,5 +1,7 @@
 import { ZodError, AnyZodObject } from "zod";
 import { Request, Response, NextFunction } from "express";
+import { body } from 'express-validator';
+import { Role } from '@prisma/client';
 
 /**
  * Middleware для валидации запросов по заданной Zod-схеме.
@@ -36,3 +38,18 @@ export function validate<T extends AnyZodObject>(schema: T) {
         return next();
     };
 }
+
+// Валидация для создания/обновления пользователя
+export const validateUser = [
+    body('name').trim().notEmpty().withMessage('Имя обязательно'),
+    body('email').trim().isEmail().withMessage('Некорректный email'),
+    body('password')
+        .optional()
+        .isLength({ min: 6 })
+        .withMessage('Пароль должен быть минимум 6 символов'),
+    body('role').isIn(Object.values(Role)).withMessage('Некорректная роль'),
+    body('phone')
+        .optional()
+        .isMobilePhone('any')
+        .withMessage('Некорректный номер телефона')
+];
