@@ -1,40 +1,41 @@
-// src/pages/BarbershopsList.tsx
 import React, { useState, useEffect } from "react";
 import {
-    Grid,
-    Card,
-    CardMedia,
-    CardContent,
-    Typography,
-    Button,
-    Pagination,
-    Box,
-    Stack,
-    Skeleton,
-    Rating,
+    Grid, Card, CardMedia, CardContent, Typography, Button, Pagination,
+    Box, Stack, Skeleton, InputAdornment, TextField, MenuItem, Select,
+    FormControl, InputLabel
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBarbershops } from "../api/barbershops";
+import { fetchBarbershops, fetchCities } from "../api/barbershops";
 import { BarberShop } from "../types";
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import StarIcon from '@mui/icons-material/Star';
+import SearchIcon from '@mui/icons-material/Search';
 
 const ITEMS_PER_PAGE = 6;
 
 export default function BarbershopsList() {
     const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCity, setSelectedCity] = useState("");
+    const [cities, setCities] = useState<string[]>([]);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-    const { data: barbershops = [], isLoading } = useQuery<BarberShop[]>({
-        queryKey: ["barbershops", page, userLocation],
+
+    // Исправленный useQuery
+    const {
+        data: barbershops = [],
+        isLoading,
+        isFetching
+    } = useQuery<BarberShop[], Error>({
+        queryKey: ["barbershops", page, userLocation, selectedCity, searchQuery],
         queryFn: () =>
             fetchBarbershops({
                 page,
                 limit: ITEMS_PER_PAGE,
                 lat: userLocation?.[0],
                 lon: userLocation?.[1],
-                popular: !userLocation,
-            }),
-        initialData: [],
+                popular: !userLocation && !selectedCity,
+                city: selectedCity || undefined,
+                search: searchQuery || undefined
+            })
     });
 
     // Запрос геолокации
@@ -61,28 +62,68 @@ export default function BarbershopsList() {
         setPage(value);
     };
 
+    // Рассчитываем общее количество страниц
+    const pageCount = barbershops.length > 0 ? Math.ceil(barbershops.length / ITEMS_PER_PAGE) : 0;
+
     return (
         <Box sx={{ maxWidth: { xs: "95%", md: "85%", lg: "75%" }, margin: "40px auto", px: 2 }}>
-            {/* Заголовок */}
-            <Typography
-                variant="h4"
-                gutterBottom
-                sx={{
-                    fontWeight: 700,
-                    mb: 4,
-                    color: 'text.primary',
-                    textAlign: 'center',
-                    fontSize: { xs: '1.8rem', sm: '2.2rem' }
-                }}
-            >
-                {userLocation ? "Ближайшие барбершопы" : "Популярные барбершопы"}
-            </Typography>
+            {/* Заголовок и фильтры */}
+            <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 3,
+                mb: 4,
+                alignItems: 'center'
+            }}>
+                <Box sx={{ flexGrow: 1 }}>
+                    <Typography
+                        variant="h4"
+                        gutterBottom
+                        sx={{
+                            fontWeight: 700,
+                            color: 'text.primary',
+                            textAlign: { xs: 'center', sm: 'left' },
+                            fontSize: { xs: '1.8rem', sm: '2.2rem' }
+                        }}
+                    >
+                        {userLocation && !selectedCity ? "Ближайшие барбершопы" : "Наши барбершопы"}
+                    </Typography>
+                </Box>
+
+                <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                    justifyContent: { xs: 'center', sm: 'flex-end' }
+                }}>
+                    {/* Поиск по названию */}
+                    <TextField
+                        placeholder="Поиск по названию"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{
+                            minWidth: 250,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 3,
+                                height: 48
+                            }
+                        }}
+                    />
+                </Box>
+            </Box>
 
             {/* Список карточек */}
-            {isLoading ? (
+            {(isLoading || isFetching) ? (
                 <Grid container spacing={3}>
                     {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
-                        <Grid size={{ xs: 8, sm: 6, md: 4 }} key={index}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
                             <Card sx={{
                                 height: "100%",
                                 borderRadius: 3,
@@ -108,11 +149,21 @@ export default function BarbershopsList() {
                         </Grid>
                     ))}
                 </Grid>
+            ) : barbershops.length === 0 ? (
+                <Box textAlign="center" py={4}>
+                    <LocationOnIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                        Барбершопы не найдены
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                        Попробуйте изменить параметры поиска
+                    </Typography>
+                </Box>
             ) : (
                 <>
                     <Grid container spacing={3}>
-                        {barbershops.map((barbershop) => (
-                            <Grid size={{ xs: 8, sm: 6, md: 4 }} key={barbershop.id} sx={{ display: 'flex' }}>
+                        {barbershops.map((barbershop: BarberShop) => (
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={barbershop.id}>
                                 <Card
                                     sx={{
                                         height: "100%",
@@ -211,7 +262,7 @@ export default function BarbershopsList() {
                     {/* Пагинация */}
                     <Stack spacing={2} sx={{ mt: 6, mb: 4, alignItems: "center" }}>
                         <Pagination
-                            count={Math.ceil(barbershops.length / ITEMS_PER_PAGE)}
+                            count={pageCount}
                             page={page}
                             onChange={handlePageChange}
                             color="primary"
