@@ -1,73 +1,64 @@
 // src/pages/BarberDetail.tsx
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { fetchBarberById, fetchAvailableSlots } from "../api/barber";
-import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { Barber, Service } from "../types";
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBarberById, fetchAvailableSlots } from '../api/barber';
+import { useAuth } from '../contexts/AuthContext';
+import { createAppointment } from '../api/appointment';
 import {
-    Grid,
-    Typography,
-    Button,
     Box,
-    CircularProgress,
-    Alert,
-    MenuItem,
-    Select,
-    FormControl,
-    InputLabel,
-    Snackbar,
+    Typography,
+    Grid,
+    Button,
     Card,
     CardContent,
+    Snackbar,
+    Alert as MuiAlert,
+    Divider,
     Avatar,
     Chip,
-    Divider,
-    Paper,
-    useTheme
-} from "@mui/material";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import dayjs, { Dayjs } from "dayjs";
-import { createAppointment } from "../api/appointment";
-import { CalendarToday, Schedule, Style, MonetizationOn } from "@mui/icons-material";
+    Rating,
+    CircularProgress,
+    Alert
+} from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+import { CalendarToday, Schedule, Style, MonetizationOn } from '@mui/icons-material';
+import { ErrorMessage } from '@/components/ErrorMessage';
+import { getTheme } from '@/theme';
+import { Barber, Service } from '../types';
 
 interface TimeSlot {
     start: string;
     end: string;
 }
 
-const BarberDetail: React.FC = () => {
+export default function BarberDetail() {
     const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
+    const { id } = useParams();
     const { user } = useAuth();
-    const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
+    const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
     const [selectedService, setSelectedService] = useState<number | null>(null);
-    const theme = useTheme();
 
-    // Состояние для управления Snackbar
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
         severity: "success" as "success" | "error",
     });
 
-    const {
-        data: barber,
-        isLoading,
-        error: barberError
-    } = useQuery<Barber>({
-        queryKey: ["barber", id],
-        queryFn: () => fetchBarberById(Number(id))
+    const { data: barber, isLoading, error } = useQuery({
+        queryKey: ['barber', id],
+        queryFn: () => fetchBarberById(Number(id)),
     });
 
     // Загрузка доступных слотов времени при изменении даты или услуги
-    useEffect(() => {
+    React.useEffect(() => {
         if (selectedDate && selectedService && barber) {
-            const service = barber.services.find(s => s.id === selectedService);
+            const service = barber.services.find((s: { id: number; }) => s.id === selectedService);
             if (service) {
                 fetchAvailableSlots(barber.id, selectedService, selectedDate.format("YYYY-MM-DD"))
                     .then(setTimeSlots)
@@ -90,7 +81,7 @@ const BarberDetail: React.FC = () => {
         }
 
         if (!user) {
-            navigate('/login', { state: { from: location.pathname } });
+            navigate('/signin', { state: { from: location.pathname } });
             return;
         }
 
@@ -111,7 +102,6 @@ const BarberDetail: React.FC = () => {
 
             setSelectedTime(null);
             setSelectedDate(null);
-
         } catch (error) {
             console.error("Ошибка записи:", error);
             setSnackbar({
@@ -134,14 +124,12 @@ const BarberDetail: React.FC = () => {
         );
     }
 
-    if (barberError || !barber) {
-        return (
-            <Box sx={{ maxWidth: "800px", margin: "40px auto", p: 3 }}>
-                <Alert severity="error" sx={{ mt: 4, borderRadius: 2 }}>
-                    {barberError?.message || "Мастер не найден"}
-                </Alert>
-            </Box>
-        );
+    if (error) {
+        return <ErrorMessage message={error.message || "Мастер не найден"} />;
+    }
+
+    if (!barber) {
+        return <ErrorMessage message="Мастер не найден" />;
     }
 
     return (
@@ -154,7 +142,7 @@ const BarberDetail: React.FC = () => {
                             sx={{
                                 width: 120,
                                 height: 120,
-                                border: `3px solid ${theme.palette.primary.main}`
+                                // border: `3px solid ${getTheme.palette.primary.main}`
                             }}
                         />
                         <Box>
@@ -176,27 +164,34 @@ const BarberDetail: React.FC = () => {
                     </Box>
                 </CardContent>
             </Card>
-
             <Divider sx={{ my: 4 }} />
-
             <Typography variant="h5" gutterBottom sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
                 <Style fontSize="large" color="primary" /> Услуги и запись
             </Typography>
-
             {barber.services && barber.services.length > 0 ? (
                 <Box>
                     <Card sx={{ borderRadius: 3, mb: 4, boxShadow: 2 }}>
                         <CardContent>
-                            <FormControl fullWidth>
-                                <InputLabel sx={{ fontWeight: 500 }}>Выберите услугу</InputLabel>
-                                <Select
-                                    value={selectedService || ''}
-                                    onChange={(e) => setSelectedService(Number(e.target.value))}
-                                    label="Выберите услугу"
-                                    sx={{ borderRadius: 2 }}
-                                >
-                                    {barber.services.map((service) => (
-                                        <MenuItem key={service.id} value={service.id} sx={{ py: 1.5 }}>
+                            <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>Выберите услугу</Typography>
+                            <Grid container spacing={2}>
+                                {barber.services.map((service: Service) => (
+                                    <Grid size={{ xs: 12 }} key={service.id}>
+                                        <Button
+                                            variant={selectedService === service.id ? "contained" : "outlined"}
+                                            fullWidth
+                                            onClick={() => setSelectedService(service.id)}
+                                            sx={{
+                                                borderRadius: 2,
+                                                py: 1.5,
+                                                fontWeight: selectedService === service.id ? 600 : 500,
+                                                boxShadow: selectedService === service.id ? 2 : 0,
+                                                transition: "all 0.2s ease",
+                                                "&:hover": {
+                                                    transform: "translateY(-2px)",
+                                                    boxShadow: 2
+                                                }
+                                            }}
+                                        >
                                             <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                                                 <Typography variant="body1" fontWeight={500}>
                                                     {service.name}
@@ -215,13 +210,12 @@ const BarberDetail: React.FC = () => {
                                                     />
                                                 </Box>
                                             </Box>
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                                        </Button>
+                                    </Grid>
+                                ))}
+                            </Grid>
                         </CardContent>
                     </Card>
-
                     {selectedService && (
                         <>
                             <Grid container spacing={3}>
@@ -250,7 +244,6 @@ const BarberDetail: React.FC = () => {
                                         </CardContent>
                                     </Card>
                                 </Grid>
-
                                 {selectedDate && (
                                     <Grid size={{ xs: 12, md: 6 }}>
                                         <Card sx={{ borderRadius: 3, boxShadow: 2, height: "100%" }}>
@@ -293,7 +286,6 @@ const BarberDetail: React.FC = () => {
                                     </Grid>
                                 )}
                             </Grid>
-
                             <Box sx={{ mt: 4 }}>
                                 {user ? (
                                     <Button
@@ -336,7 +328,6 @@ const BarberDetail: React.FC = () => {
                     У этого мастера пока нет доступных услуг
                 </Alert>
             )}
-
             {/* Snackbar для уведомлений */}
             <Snackbar
                 open={snackbar.open}
@@ -344,7 +335,7 @@ const BarberDetail: React.FC = () => {
                 onClose={handleCloseSnackbar}
                 anchorOrigin={{ vertical: "top", horizontal: "center" }}
             >
-                <Alert
+                <MuiAlert
                     onClose={handleCloseSnackbar}
                     severity={snackbar.severity}
                     variant="filled"
@@ -355,10 +346,8 @@ const BarberDetail: React.FC = () => {
                     }}
                 >
                     <Typography fontWeight={500}>{snackbar.message}</Typography>
-                </Alert>
+                </MuiAlert>
             </Snackbar>
         </Box>
     );
-};
-
-export default BarberDetail;
+}

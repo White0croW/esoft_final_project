@@ -21,6 +21,11 @@ import { Edit, Lock, Event, Schedule, Close, CheckCircle, Cancel, ArrowDownward,
 // Тип для сортировки
 type Order = 'asc' | 'desc';
 
+// Функция для получения вложенных свойств
+function getNestedValue(obj: any, path: string) {
+    return path.split('.').reduce((acc, part) => acc?.[part], obj);
+}
+
 // Функция для стабильной сортировки
 function stableSort<T>(array: T[], comparator: (a: T, b: T) => number) {
     const stabilizedThis = array.map((el, index) => [el, index] as [T, number]);
@@ -33,28 +38,34 @@ function stableSort<T>(array: T[], comparator: (a: T, b: T) => number) {
 }
 
 // Компараторы для разных типов данных
-function getComparator<Key extends keyof any>(
+function descendingComparator<T>(a: T, b: T, orderBy: string) {
+    const aValue = getNestedValue(a, orderBy);
+    const bValue = getNestedValue(b, orderBy);
+
+    if (bValue === undefined || bValue === null) return -1;
+    if (aValue === undefined || aValue === null) return 1;
+
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return bValue.localeCompare(aValue);
+    }
+
+    if (bValue < aValue) return -1;
+    if (bValue > aValue) return 1;
+    return 0;
+}
+
+function getComparator(
     order: Order,
-    orderBy: Key,
-): (a: { [key in Key]: any }, b: { [key in Key]: any }) => number {
+    orderBy: string,
+): (a: any, b: any) => number {
     return order === 'desc'
         ? (a, b) => descendingComparator(a, b, orderBy)
         : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-    if (b[orderBy] < a[orderBy]) {
-        return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-        return 1;
-    }
-    return 0;
-}
-
 // Интерфейс для заголовков таблицы
 interface HeadCell {
-    id: keyof Appointment;
+    id: string;
     label: string;
     sortable: boolean;
     align?: 'left' | 'center' | 'right';
@@ -63,9 +74,9 @@ interface HeadCell {
 // Конфигурация колонок
 const headCells: HeadCell[] = [
     { id: 'date', label: 'Дата и время', sortable: true },
-    { id: 'service', label: 'Услуга', sortable: true },
-    { id: 'barber', label: 'Барбер', sortable: true },
-    { id: 'barbershop', label: 'Барбершоп', sortable: true },
+    { id: 'service.name', label: 'Услуга', sortable: true },
+    { id: 'barber.name', label: 'Барбер', sortable: true },
+    { id: 'barbershop.name', label: 'Барбершоп', sortable: true },
     { id: 'status', label: 'Статус', sortable: true, align: 'center' },
     { id: 'actions', label: 'Действия', sortable: false, align: 'center' }
 ];
@@ -96,7 +107,7 @@ export default function ProfilePage() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [order, setOrder] = useState<Order>('asc');
-    const [orderBy, setOrderBy] = useState<keyof Appointment>('date');
+    const [orderBy, setOrderBy] = useState<string>('date');
 
     const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
@@ -177,7 +188,7 @@ export default function ProfilePage() {
 
     // Обработчик сортировки
     const handleRequestSort = (
-        property: keyof Appointment,
+        property: string,
     ) => {
         const isAsc = orderBy === property && order === 'asc';
         setOrder(isAsc ? 'desc' : 'asc');
@@ -196,7 +207,7 @@ export default function ProfilePage() {
     };
 
     // Функция для создания обработчика сортировки
-    const createSortHandler = (property: keyof Appointment) => () => {
+    const createSortHandler = (property: string) => () => {
         handleRequestSort(property);
     };
 
@@ -373,7 +384,7 @@ export default function ProfilePage() {
                 {activeTab === 0 && (
                     <Box sx={{ p: { xs: 2, md: 4 } }}>
                         <Grid container spacing={4}>
-                            <Grid size={{ xs: 12, md: 5 }}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%' }}>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
                                         <Avatar sx={{
@@ -400,7 +411,7 @@ export default function ProfilePage() {
                                 </Card>
                             </Grid>
 
-                            <Grid size={{ xs: 12, md: 7 }}>
+                            <Grid size={{ xs: 12, md: 8 }}>
                                 <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
                                     <CardHeader
                                         title="Редактирование профиля"

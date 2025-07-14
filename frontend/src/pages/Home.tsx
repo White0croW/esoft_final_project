@@ -1,5 +1,5 @@
 // src/pages/Home.tsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
     Autocomplete,
     Box,
@@ -13,23 +13,22 @@ import {
     IconButton,
     Chip,
     Skeleton,
-} from "@mui/material";
-import Grid from "@mui/material/Grid";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { useAuth } from "../contexts/AuthContext";
-import { fetchBarbershops } from "../api/barbershops";
-import { fetchPortfolio } from "../api/portfolio";
-import { BarberShop, PortfolioItem } from "../types";
-import { LocationOn, Search, Favorite, ArrowForward } from "@mui/icons-material";
-import { NavLink } from "react-router-dom";
-import { styled } from "@mui/system";
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useAuth } from '../contexts/AuthContext';
+import { fetchBarbershops } from '../api/barbershops';
+import { fetchPortfolio } from '../api/portfolio';
+import { BarberShop, PortfolioItem } from '../types';
+import { LocationOn, Search, Favorite, ArrowForward } from '@mui/icons-material';
+import { NavLink } from 'react-router-dom';
 
 // ESM-импорты иконок Leaflet
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 // Конфигурируем маркеры
 L.Icon.Default.mergeOptions({
@@ -54,38 +53,12 @@ function calcDistance(
     const φ2 = toRad(lat2);
     const Δφ = toRad(lat2 - lat1);
     const Δλ = toRad(lon2 - lon1);
-
     const a =
         Math.sin(Δφ / 2) ** 2 +
         Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 }
-
-// Стилизованный компонент для карточки портфолио
-const PortfolioCard = styled(Card)(({ theme }) => ({
-    borderRadius: 12,
-    overflow: "hidden",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-    transition: "all 0.3s ease",
-    "&:hover": {
-        transform: "translateY(-8px)",
-        boxShadow: "0 12px 28px rgba(0,0,0,0.2)",
-    },
-}));
-
-// Стилизованный маркер для карты
-const CustomMarker = L.Icon.extend({
-    options: {
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32],
-    },
-});
-
-const barberMarker = new CustomMarker({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/3058/3058973.png",
-});
 
 export default function Home() {
     const { token } = useAuth();
@@ -100,12 +73,10 @@ export default function Home() {
     // Загрузка портфолио и всех барбершопов
     useEffect(() => {
         setLoading(true);
-
         const fetchData = async () => {
             try {
                 const portfolioData = await fetchPortfolio();
                 setPortfolio(portfolioData);
-
                 if (!token) {
                     // Если пользователь не авторизован — загружаем популярные
                     const shopsData = await fetchBarbershops({ popular: true });
@@ -114,14 +85,12 @@ export default function Home() {
                     setLoading(false);
                     return;
                 }
-
                 // Получаем текущее местоположение пользователя
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         async (position) => {
                             const { latitude, longitude } = position.coords;
                             setCenter([latitude, longitude]);
-
                             try {
                                 const nearbyShops = await fetchBarbershops({
                                     lat: latitude,
@@ -162,7 +131,6 @@ export default function Home() {
                 setLoading(false);
             }
         };
-
         fetchData();
     }, [token]);
 
@@ -205,28 +173,24 @@ export default function Home() {
             const { geo_lat, geo_lon } = value.data;
             const newCenter: [number, number] = [+geo_lat, +geo_lon];
             setCenter(newCenter);
-
-            // Загружаем барбершопы по новым координатам
             fetchBarbershops({ lat: newCenter[0], lon: newCenter[1] })
                 .then(setDisplayedShops)
                 .catch(console.error);
         } else if (value === null) {
-            // Если пользователь очистил поле — загрузите популярные шопы
             fetchBarbershops({ popular: true })
                 .then(setDisplayedShops)
                 .catch(console.error);
         }
     };
 
-    function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
+    // Используем MapContainer из react-leaflet
+    const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }) => {
         const map = useMap();
-
-        useEffect(() => {
+        React.useEffect(() => {
             map.setView(center, zoom);
         }, [center, zoom, map]);
-
         return null;
-    }
+    };
 
     return (
         <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: 6 }}>
@@ -247,7 +211,7 @@ export default function Home() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: "url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1920')",
+                    background: "url('https://images.unsplash.com/photo-1503951914875-452162b07e57?auto=format&fit=crop&w=1920')",
                     backgroundSize: "cover",
                     opacity: 0.2,
                     zIndex: 0,
@@ -255,6 +219,7 @@ export default function Home() {
             }}>
                 <Typography
                     variant="h2"
+                    gutterBottom
                     sx={{
                         fontWeight: 800,
                         mb: 2,
@@ -267,6 +232,7 @@ export default function Home() {
                 </Typography>
                 <Typography
                     variant="h5"
+                    gutterBottom
                     sx={{
                         fontWeight: 400,
                         mb: 4,
@@ -304,7 +270,6 @@ export default function Home() {
                     Найти барбершоп
                 </Button>
             </Box>
-
             {/* Портфолио */}
             <Typography
                 variant="h3"
@@ -312,22 +277,17 @@ export default function Home() {
                 sx={{
                     fontWeight: 700,
                     mb: 4,
-                    textAlign: "center",
-                    color: "text.primary"
+                    textAlign: 'center',
+                    color: 'text.primary'
                 }}
             >
                 Наши работы
             </Typography>
-
             {loading ? (
                 <Grid container spacing={3} sx={{ mb: 6 }}>
                     {[...Array(3)].map((_, i) => (
                         <Grid size={{ xs: 8, sm: 6, md: 4 }} key={i}>
-                            <Skeleton
-                                variant="rectangular"
-                                height={300}
-                                sx={{ borderRadius: 3 }}
-                            />
+                            <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 3 }} />
                         </Grid>
                     ))}
                 </Grid>
@@ -335,7 +295,16 @@ export default function Home() {
                 <Grid container spacing={3} sx={{ mb: 6 }}>
                     {portfolio.slice(0, 3).map((p) => (
                         <Grid size={{ xs: 8, sm: 6, md: 4 }} key={p.id}>
-                            <PortfolioCard>
+                            <Card sx={{
+                                height: "100%",
+                                borderRadius: 3,
+                                boxShadow: 3,
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    transform: "translateY(-8px)",
+                                    boxShadow: "0 12px 28px rgba(0,0,0,0.2)"
+                                }
+                            }}>
                                 <CardMedia
                                     component="img"
                                     height="300"
@@ -346,6 +315,7 @@ export default function Home() {
                                 <CardContent sx={{ p: 3 }}>
                                     <Typography
                                         variant="h6"
+                                        gutterBottom
                                         sx={{
                                             fontWeight: 600,
                                             display: "flex",
@@ -360,12 +330,11 @@ export default function Home() {
                                         <Chip label="Борода" size="small" />
                                     </Box>
                                 </CardContent>
-                            </PortfolioCard>
+                            </Card>
                         </Grid>
                     ))}
                 </Grid>
             )}
-
             {/* Поиск барбершопов */}
             <Box id="barbershops" sx={{ mb: 6 }}>
                 <Typography
@@ -380,7 +349,6 @@ export default function Home() {
                 >
                     Найдите ближайший барбершоп
                 </Typography>
-
                 <Box sx={{
                     maxWidth: 800,
                     mx: "auto",
@@ -402,17 +370,15 @@ export default function Home() {
                         <LocationOn color="primary" sx={{ mr: 1 }} />
                         Укажите ваш адрес для поиска
                     </Typography>
-
-                    <Autocomplete<string | DadataSuggestion, false, false, true>
+                    <Autocomplete
                         freeSolo
-                        filterOptions={(opts) => opts}
+                        options={addrOptions}
+                        getOptionLabel={(option) => typeof option === "string" ? option : option.value}
                         inputValue={addrInput}
                         onInputChange={(_, v) => {
                             setAddrInput(v);
                             fetchDadata(v);
                         }}
-                        options={addrOptions}
-                        getOptionLabel={(opt) => (typeof opt === "string" ? opt : opt.value)}
                         onChange={handleAddressChange}
                         renderInput={(params) => (
                             <TextField
@@ -430,9 +396,13 @@ export default function Home() {
                                 }}
                             />
                         )}
+                        renderOption={(props, option) => (
+                            <Box component="li" {...props}>
+                                {typeof option === "string" ? option : option.value}
+                            </Box>
+                        )}
                     />
                 </Box>
-
                 {/* Карта с барбершопами */}
                 <Box
                     sx={{
@@ -441,7 +411,8 @@ export default function Home() {
                         borderRadius: 3,
                         overflow: "hidden",
                         boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-                        border: "1px solid rgba(0,0,0,0.08)"
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        mb: 4
                     }}
                 >
                     <MapContainer
@@ -452,15 +423,13 @@ export default function Home() {
                         <ChangeView center={center} zoom={12} />
                         <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            attribution='&copy; <a href=" https://www.openstreetmap.org/copyright ">OpenStreetMap</a> contributors'
                         />
-
                         {/* Маркеры барбершопов */}
                         {displayedShops.map((s) => (
                             <Marker
                                 key={s.id}
                                 position={[s.lat, s.lon]}
-                                icon={barberMarker}
                             >
                                 <Popup>
                                     <Box sx={{ minWidth: 200, p: 1 }}>
@@ -468,14 +437,11 @@ export default function Home() {
                                             variant="subtitle1"
                                             sx={{ fontWeight: 700, mb: 1 }}
                                         >
-                                            <NavLink
-                                                to={`/barbershops/${s.id}`}
-                                                style={{ color: "#1a2a6c", textDecoration: "none" }}
-                                            >
+                                            <NavLink to={`/barbershops/${s.id}`} style={{ color: "#1a2a6c", textDecoration: "none" }}>
                                                 {s.name}
                                             </NavLink>
                                         </Typography>
-                                        <Typography variant="body2" sx={{ mb: 1 }}>
+                                        <Typography variant="body2">
                                             {s.address}
                                         </Typography>
                                     </Box>
@@ -484,9 +450,8 @@ export default function Home() {
                         ))}
                     </MapContainer>
                 </Box>
-
                 {/* Кнопка "Показать все" */}
-                <Box sx={{ textAlign: "center", mt: 4 }}>
+                <Box sx={{ textAlign: "center" }}>
                     <Button
                         variant="outlined"
                         size="large"
@@ -496,19 +461,17 @@ export default function Home() {
                             fontWeight: 600,
                             py: 1.5,
                             px: 6,
-                            borderRadius: 3,
-                            fontSize: "1rem",
+                            borderRadius: 2,
                             borderWidth: 2,
                             "&:hover": {
                                 borderWidth: 2,
-                            },
+                            }
                         }}
                     >
                         Показать все барбершопы
                     </Button>
                 </Box>
             </Box>
-
             {/* Призыв к действию */}
             <Box sx={{
                 bgcolor: "background.paper",
@@ -529,19 +492,17 @@ export default function Home() {
                     size="large"
                     href="/barbershops"
                     sx={{
-                        bgcolor: "primary.main",
                         background: "linear-gradient(45deg, #1a2a6c 30%, #b21f1f 90%)",
                         color: "white",
                         fontWeight: 700,
                         py: 1.5,
                         px: 6,
                         borderRadius: 3,
-                        fontSize: "1.1rem",
                         boxShadow: "0 8px 20px rgba(26, 42, 108, 0.3)",
                         "&:hover": {
                             transform: "translateY(-2px)",
-                            boxShadow: "0 12px 24px rgba(26, 42, 108, 0.4)",
-                        },
+                            boxShadow: "0 12px 28px rgba(26, 42, 108, 0.4)"
+                        }
                     }}
                 >
                     Записаться онлайн

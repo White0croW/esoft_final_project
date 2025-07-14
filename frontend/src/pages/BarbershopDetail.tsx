@@ -1,8 +1,9 @@
-import React from "react";
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { fetchBarbershopById } from "../api/barbershops";
-import { BarberShop, Barber } from "../types";
+// src/pages/BarbershopDetail.tsx
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBarbershopById } from '../api/barbershops';
+import { BarberShop, Barber } from '../types';
 import {
     Grid,
     Card,
@@ -16,16 +17,16 @@ import {
     Chip,
     Skeleton,
     Rating
-} from "@mui/material";
+} from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import StarIcon from '@mui/icons-material/Star';
 import PeopleIcon from '@mui/icons-material/People';
 import { deepPurple } from '@mui/material/colors';
 
-const BarbershopDetail: React.FC = () => {
+export default function BarbershopDetail() {
     const { id } = useParams();
     const { data: barbershop, isLoading, isError } = useQuery<BarberShop>({
-        queryKey: ["barbershop", id],
+        queryKey: ['barbershop', id],
         queryFn: () => fetchBarbershopById(Number(id)),
     });
 
@@ -101,9 +102,7 @@ const BarbershopDetail: React.FC = () => {
                     </Box>
                 </Box>
             </Box>
-
             <Divider sx={{ my: 3 }} />
-
             {/* Заголовок мастеров */}
             <Box sx={{
                 display: 'flex',
@@ -125,7 +124,6 @@ const BarbershopDetail: React.FC = () => {
                     sx={{ ml: 2 }}
                 />
             </Box>
-
             {/* Список мастеров */}
             {barbershop.barbers.length > 0 ? (
                 <Grid container spacing={3}>
@@ -164,7 +162,6 @@ const BarbershopDetail: React.FC = () => {
                                             </Typography>
                                         </Box>
                                     </Box>
-
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                         <Rating
                                             value={barber.rating || 4.7}
@@ -176,8 +173,6 @@ const BarbershopDetail: React.FC = () => {
                                             {barber.rating || "4.7"}
                                         </Typography>
                                     </Box>
-
-
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                         {["Мужские стрижки", "Борода", "Детские"].map((skill, index) => (
                                             <Chip
@@ -190,7 +185,6 @@ const BarbershopDetail: React.FC = () => {
                                         ))}
                                     </Box>
                                 </CardContent>
-
                                 <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
                                     <Button
                                         variant="contained"
@@ -236,7 +230,6 @@ const BarbershopDetail: React.FC = () => {
                     </Button>
                 </Box>
             )}
-
             {/* Дополнительная информация */}
             <Box sx={{ mt: 6, p: 4, bgcolor: 'background.paper', borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                 <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
@@ -264,6 +257,4 @@ const BarbershopDetail: React.FC = () => {
             </Box>
         </Container>
     );
-};
-
-export default BarbershopDetail;
+}
