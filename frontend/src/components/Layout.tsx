@@ -20,6 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import { Role } from "@/types";
 
 const drawerWidth = 240;
 
@@ -39,6 +40,7 @@ export default function Layout() {
     const links: LinkConfig[] = [
         { to: "/", label: "Главная", public: true },
         { to: "/barbershops", label: "Барбершопы", public: true },
+        { to: "/admin", label: "Панель администратора", role: "admin" },
         { to: "/profile", label: "Профиль", role: "user" },
     ];
 
@@ -46,7 +48,7 @@ export default function Layout() {
         if (link.public) return true;
         if (!user) return false;
         return link.role === "admin"
-            ? user.role === "admin"
+            ? user.role === Role.ADMIN
             : link.role === "user";
     });
 

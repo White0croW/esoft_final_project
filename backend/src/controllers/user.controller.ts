@@ -171,6 +171,16 @@ export const createUser = async (req: Request, res: Response) => {
                 role: true
             }
         });
+        await db.auditLog.create({
+            data: {
+                userId: (req as any).user.userId,
+                action: "USER_CREATED",
+                details: {
+                    createdUserId: newUser.id,
+                    email: newUser.email
+                }
+            }
+        });
         res.status(201).json(newUser);
     } catch (err) {
         console.error("createUser error:", err);
@@ -195,6 +205,16 @@ export const updateUser = async (req: Request, res: Response) => {
                 role: true
             }
         });
+        await db.auditLog.create({
+            data: {
+                userId: (req as any).user.userId,
+                action: "USER_UPDATED",
+                details: {
+                    updatedUserId: updatedUser.id,
+                    email: updatedUser.email
+                }
+            }
+        });
         res.json(updatedUser);
     } catch (err) {
         console.error("updateUser error:", err);
@@ -206,7 +226,17 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-        await db.user.delete({ where: { id: Number(id) } });
+        const deletedUser = await db.user.delete({ where: { id: Number(id) } });
+        await db.auditLog.create({
+            data: {
+                userId: (req as any).user.userId,
+                action: "USER_DELETED",
+                details: {
+                    deletedUserId: deletedUser.id,
+                    email: deletedUser.email
+                }
+            }
+        });
         res.status(204).send();
     } catch (err) {
         console.error("deleteUser error:", err);

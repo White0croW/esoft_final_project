@@ -121,3 +121,20 @@ export interface TimeSlot {
     start: string; // "HH:MM"
     end: string;   // "HH:MM"
 }
+
+export interface DashboardStats {
+    users: number;
+    barbershops: number;
+    appointments: number;
+    revenue?: number; // Опционально, если добавите
+}
+
+// Действие в системе
+export interface RecentAction {
+    id: number;
+    action: string;
+    timestamp: string;
+    user: string;
+    userAvatar?: string;
+    details?: any; // Для дополнительной информации
+}
