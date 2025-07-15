@@ -29,6 +29,8 @@ interface AuthContextValue {
     register: (data: { name: string; email: string; password: string }) => Promise<void>;
     logout: () => void;
     initialized: boolean;
+    updateUser: (user: User) => void;
+    refreshCurrentUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -47,6 +49,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (u) setUser(JSON.parse(u));
         setInitialized(true);
     }, []);
+
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === "user") {
+                try {
+                    const newUser = e.newValue ? JSON.parse(e.newValue) : null;
+                    if (JSON.stringify(user) !== JSON.stringify(newUser)) {
+                        setUser(newUser);
+                    }
+                } catch (error) {
+                    console.error("Error parsing user data from storage:", error);
+                }
+            }
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        return () => window.removeEventListener("storage", handleStorageChange);
+    }, [user]);
+
+    const refreshCurrentUser = async () => {
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${API}/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+                const me: User = await response.json();
+                updateUser(me);
+            }
+        } catch (error) {
+            console.error("Failed to refresh user data:", error);
+        }
+    };
 
     const fetchProfile = async (t: string) => {
         const res = await fetch(`${API}/auth/me`, {
@@ -96,9 +132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
     };
 
+    const updateUser = (updatedUser: User) => {
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+    };
+
     return (
         <AuthContext.Provider
-            value={{ user, token, login, register, logout, initialized }}
+            value={{ user, token, login, register, logout, initialized, updateUser, refreshCurrentUser }}
         >
             {children}
         </AuthContext.Provider>

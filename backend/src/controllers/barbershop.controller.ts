@@ -109,3 +109,184 @@ export const getCities = async (req: Request, res: Response) => {
         res.status(500).json({ error: "Ошибка загрузки городов" });
     }
 };
+
+export const getAllBarbershops = async (req: Request, res: Response) => {
+    const {
+        page = 1,
+        limit = 10,
+        search,
+        sortBy = 'id', // Добавляем параметры сортировки
+        sortOrder = 'asc'
+    } = req.query;
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    try {
+        let where: any = {};
+        if (search) {
+            where = {
+                OR: [
+                    { name: { contains: search as string, mode: 'insensitive' } },
+                    { address: { contains: search as string, mode: 'insensitive' } },
+                ],
+            };
+        }
+
+        // Определяем порядок сортировки
+        let orderBy: any = {};
+        const validSortFields = ['id', 'name', 'address', 'lat', 'lon', 'createdAt'];
+
+        if (validSortFields.includes(sortBy as string)) {
+            orderBy[sortBy as string] = sortOrder === 'desc' ? 'desc' : 'asc';
+        } else {
+            // Сортировка по умолчанию
+            orderBy = { id: 'asc' };
+        }
+
+        const [barbershops, total] = await prisma.$transaction([
+            prisma.barbershop.findMany({
+                where,
+                skip,
+                take: limitNum,
+                orderBy, // Применяем сортировку
+            }),
+            prisma.barbershop.count({ where }),
+        ]);
+
+        res.json({
+            data: barbershops,
+            total,
+            totalPages: Math.ceil(total / limitNum),
+            currentPage: pageNum,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Ошибка при получении барбершопов" });
+    }
+};
+
+export const createBarbershop = async (req: Request, res: Response) => {
+    const { name, address, lat, lon } = req.body;
+    const userId = (req as any).user?.userId; // Предполагаем, что пользователь добавлен в req через middleware
+
+    try {
+        const newBarbershop = await prisma.barbershop.create({
+            data: {
+                name,
+                address,
+                lat: parseFloat(lat),
+                lon: parseFloat(lon),
+            },
+        });
+
+        // Логирование
+        if (userId) {
+            try {
+                await prisma.auditLog.create({
+                    data: {
+                        userId,
+                        action: "BARBERSHOP_CREATED",
+                        details: {
+                            barbershopId: newBarbershop.id,
+                            name: newBarbershop.name
+                        }
+                    }
+                });
+            } catch (logError) {
+                console.error('Audit log error:', logError);
+            }
+        }
+
+        res.status(201).json(newBarbershop);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Ошибка при создании барбершопа" });
+    }
+};
+
+export const updateBarbershop = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const { name, address, lat, lon } = req.body;
+    const userId = (req as any).user?.userId;
+
+    try {
+        const updatedBarbershop = await prisma.barbershop.update({
+            where: { id },
+            data: {
+                name,
+                address,
+                lat: parseFloat(lat),
+                lon: parseFloat(lon),
+            },
+        });
+
+        // Логирование
+        if (userId) {
+            try {
+                await prisma.auditLog.create({
+                    data: {
+                        userId,
+                        action: "BARBERSHOP_UPDATED",
+                        details: {
+                            barbershopId: id,
+                            name: updatedBarbershop.name
+                        }
+                    }
+                });
+            } catch (logError) {
+                console.error('Audit log error:', logError);
+            }
+        }
+
+        res.json(updatedBarbershop);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Ошибка при обновлении барбершопа" });
+    }
+};
+
+export const deleteBarbershop = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const userId = (req as any).user?.userId;
+
+    try {
+        // Получаем данные перед удалением для лога
+        const barbershop = await prisma.barbershop.findUnique({
+            where: { id },
+            select: { id: true, name: true }
+        });
+
+        if (!barbershop) {
+            return res.status(404).json({ error: "Барбершоп не найден" });
+        }
+
+        await prisma.barbershop.delete({
+            where: { id },
+        });
+
+        // Логирование
+        if (userId) {
+            try {
+                await prisma.auditLog.create({
+                    data: {
+                        userId,
+                        action: "BARBERSHOP_DELETED",
+                        details: {
+                            barbershopId: id,
+                            name: barbershop.name
+                        }
+                    }
+                });
+            } catch (logError) {
+                console.error('Audit log error:', logError);
+            }
+        }
+
+        res.status(204).send();
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Ошибка при удалении барбершопа" });
+    }
+};

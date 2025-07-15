@@ -7,12 +7,19 @@ import {
     deleteUser
 } from '../controllers/user.controller';
 import {
+    getAllBarbershops,
+    getBarbershopById,
+    createBarbershop,
+    updateBarbershop,
+    deleteBarbershop
+} from '../controllers/barbershop.controller';
+import {
     getDashboardStats,
     getRecentActions
 } from '../controllers/admin.controller';
 import { requireRole } from '../middlewares/requireRole';
 import { Role } from '@prisma/client';
-import { validateUser } from '../utils/validation';
+import { validateUser, validateBarbershop } from '../utils/validation';
 import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = express.Router();
@@ -27,6 +34,13 @@ router.get('/users/:id', getUserById);
 router.post('/users', validateUser, createUser);
 router.put('/users/:id', validateUser, updateUser);
 router.delete('/users/:id', deleteUser);
+
+// Управление барбершопами
+router.get('/barbershops', getAllBarbershops);
+router.get('/barbershops/:id', getBarbershopById);
+router.post('/barbershops', validateBarbershop, createBarbershop);
+router.put('/barbershops/:id', validateBarbershop, updateBarbershop);
+router.delete('/barbershops/:id', deleteBarbershop);
 
 // Новые эндпоинты для дашборда
 router.get('/stats', getDashboardStats); // Статистика

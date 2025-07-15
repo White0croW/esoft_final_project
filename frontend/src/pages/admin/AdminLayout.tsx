@@ -19,7 +19,10 @@ import {
     Home as HomeIcon,
     ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme as useAppTheme } from '@/contexts/ThemeContext';
 
 const drawerWidth = 240;
 
@@ -48,6 +51,7 @@ const StyledNavLink = styled(NavLink)(({ theme }) => ({
 
 const AdminLayout: React.FC = () => {
     const theme = useTheme();
+    const { mode, toggleMode } = useAppTheme();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -161,6 +165,9 @@ const AdminLayout: React.FC = () => {
                                 </ListItemText>
                             </MenuItem>
                         </Menu>
+                        <IconButton color="inherit" onClick={toggleMode}>
+                            {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
                     </Box>
                 </Toolbar>
             </AppBar>

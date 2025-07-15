@@ -1,6 +1,6 @@
 import { ZodError, AnyZodObject } from "zod";
 import { Request, Response, NextFunction } from "express";
-import { body } from 'express-validator';
+import { body, validationResult } from 'express-validator';
 import { Role } from '@prisma/client';
 
 /**
@@ -52,4 +52,19 @@ export const validateUser = [
         .optional()
         .isMobilePhone('any')
         .withMessage('Некорректный номер телефона')
+];
+
+export const validateBarbershop = [
+    body('name').trim().notEmpty().withMessage('Название обязательно'),
+    body('address').trim().notEmpty().withMessage('Адрес обязателен'),
+    body('lat').isNumeric().withMessage('Широта должна быть числом'),
+    body('lon').isNumeric().withMessage('Долгота должна быть числом'),
+
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }
 ];

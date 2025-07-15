@@ -9,6 +9,8 @@ interface SignUpData extends SignInData {
 }
 
 export interface SignInResponse {
+    data: any;
+    data: any;
     token: string;
 }
 

@@ -13,6 +13,8 @@ import UserForm from './pages/admin/users/UserForm';
 // Статический импорт для главной страницы
 import Home from "./pages/Home";
 import { Role } from './types';
+import BarbershopForm from './pages/admin/barbershops/BarbershopForm';
+import AdminBarbershopList from './pages/admin/barbershops/AdminBarbershopList';
 
 // Lazy-импорт остальных страниц
 const SignIn = lazy(() => import("./pages/SignIn"));
@@ -84,6 +86,9 @@ export default function App() {
                             <Route path="users/new" element={<UserForm />} />
                             <Route path="users/:id" element={<UserForm />} />
                             {/* Добавим остальные сущности позже */}
+                            <Route path="barbershops" element={<AdminBarbershopList />} />
+                            <Route path="barbershops/new" element={<BarbershopForm />} />
+                            <Route path="barbershops/:id" element={<BarbershopForm />} />
                         </Route>
                     </Route>
 

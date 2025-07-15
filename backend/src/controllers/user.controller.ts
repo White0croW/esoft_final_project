@@ -161,7 +161,7 @@ export const createUser = async (req: Request, res: Response) => {
                 email,
                 password: hashedPassword,
                 role,
-                phone
+                phone: phone?.trim()
             },
             select: {
                 id: true,
