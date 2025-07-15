@@ -86,10 +86,10 @@ Email: admin@e.ru
 ![Barbershops Management](/screenshoots/barbershops.png)
 
 ### Управление пользователями
-![Users Management](/screenshots/users.png)
+![Users Management](/screenshoots/users.png)
 
 ### Адаптивный дизайн
-![Mobile View](/screenshots/mobile.png)
+![Mobile View](/screenshoots/mobile.png)
 
 ## 🌐 Деплой проекта
 
