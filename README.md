@@ -83,13 +83,13 @@ Email: admin@e.ru
 ## 🖼 Скриншоты системы
 
 ### Панель управления барбершопами
-![Barbershops Management](screenshots/barbershops.png)
+![Barbershops Management](/screenshoots/barbershops.png)
 
 ### Управление пользователями
-![Users Management](screenshots/users.png)
+![Users Management](/screenshots/users.png)
 
 ### Адаптивный дизайн
-![Mobile View](screenshots/mobile.png)
+![Mobile View](/screenshots/mobile.png)
 
 ## 🌐 Деплой проекта
 
