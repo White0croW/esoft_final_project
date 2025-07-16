@@ -28,6 +28,7 @@ import { requireRole } from '../middlewares/requireRole';
 import { Role } from '@prisma/client';
 import { validateUser, validateBarbershop } from '../utils/validation';
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { createService, deleteService, getAllServices, getServiceById, updateService } from '../controllers/service.controller';
 
 const router = express.Router();
 
@@ -55,6 +56,13 @@ router.get('/barbers/:id', getBarberById);
 router.post('/barbers', createBarber);
 router.put('/barbers/:id', updateBarber);
 router.delete('/barbers/:id', deleteBarber);
+
+// Управление услугами
+router.get('/services', getAllServices);
+router.get('/services/:id', getServiceById);
+router.post('/services', createService);
+router.put('/services/:id', updateService);
+router.delete('/services/:id', deleteService);
 
 // Новые эндпоинты для дашборда
 router.get('/stats', getDashboardStats); // Статистика
