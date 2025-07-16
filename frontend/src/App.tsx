@@ -15,6 +15,8 @@ import Home from "./pages/Home";
 import { Role } from './types';
 import BarbershopForm from './pages/admin/barbershops/BarbershopForm';
 import AdminBarbershopList from './pages/admin/barbershops/AdminBarbershopList';
+import AdminBarberList from './pages/admin/barbers/AdminBarberList';
+import BarberForm from './pages/admin/barbers/BarberForm';
 
 // Lazy-импорт остальных страниц
 const SignIn = lazy(() => import("./pages/SignIn"));
@@ -85,10 +87,12 @@ export default function App() {
                             <Route path="users" element={<UserList />} />
                             <Route path="users/new" element={<UserForm />} />
                             <Route path="users/:id" element={<UserForm />} />
-                            {/* Добавим остальные сущности позже */}
                             <Route path="barbershops" element={<AdminBarbershopList />} />
                             <Route path="barbershops/new" element={<BarbershopForm />} />
                             <Route path="barbershops/:id" element={<BarbershopForm />} />
+                            <Route path="barbers" element={<AdminBarberList />} />
+                            <Route path="barbers/new" element={<BarberForm />} />
+                            <Route path="barbers/:id" element={<BarberForm />} />
                         </Route>
                     </Route>
 

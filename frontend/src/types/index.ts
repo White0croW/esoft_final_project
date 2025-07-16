@@ -41,6 +41,7 @@ export interface BarberShop {
     lon: number;
     createdAt: string;
     barbers: Barber[];
+    data?: [];
 }
 
 export interface Barber {

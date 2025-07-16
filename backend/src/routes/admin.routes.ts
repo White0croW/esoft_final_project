@@ -14,6 +14,13 @@ import {
     deleteBarbershop
 } from '../controllers/barbershop.controller';
 import {
+    getAllBarbers,
+    getBarberById,
+    createBarber,
+    updateBarber,
+    deleteBarber
+} from '../controllers/barber.controller';
+import {
     getDashboardStats,
     getRecentActions
 } from '../controllers/admin.controller';
@@ -41,6 +48,13 @@ router.get('/barbershops/:id', getBarbershopById);
 router.post('/barbershops', validateBarbershop, createBarbershop);
 router.put('/barbershops/:id', validateBarbershop, updateBarbershop);
 router.delete('/barbershops/:id', deleteBarbershop);
+
+// Управление барберами
+router.get('/barbers', getAllBarbers);
+router.get('/barbers/:id', getBarberById);
+router.post('/barbers', createBarber);
+router.put('/barbers/:id', updateBarber);
+router.delete('/barbers/:id', deleteBarber);
 
 // Новые эндпоинты для дашборда
 router.get('/stats', getDashboardStats); // Статистика
