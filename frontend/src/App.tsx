@@ -19,6 +19,8 @@ import AdminBarberList from './pages/admin/barbers/AdminBarberList';
 import BarberForm from './pages/admin/barbers/BarberForm';
 import AdminServiceList from './pages/admin/services/AdminServiceList';
 import ServiceForm from './pages/admin/services/ServiceForm';
+import AdminAppointmentList from './pages/admin/appointments/AdminAppointmentList';
+import AppointmentForm from './pages/admin/appointments/AppointmentForm';
 
 // Lazy-импорт остальных страниц
 const SignIn = lazy(() => import("./pages/SignIn"));
@@ -98,6 +100,9 @@ export default function App() {
                             <Route path="services" element={<AdminServiceList />} />
                             <Route path="services/new" element={<ServiceForm />} />
                             <Route path="services/:id" element={<ServiceForm />} />
+                            <Route path="appointments" element={<AdminAppointmentList />} />
+                            <Route path="appointments/new" element={<AppointmentForm />} />
+                            <Route path="appointments/:id" element={<AppointmentForm />} />
                         </Route>
                     </Route>
 

@@ -78,8 +78,7 @@ export interface Appointment {
     // Связанные объекты
     user?: User;
     service: Service;
-    barber: Barber;
-    barbershop: BarberShop;
+    barber: Barber & { barbershop?: BarberShop };
 }
 
 export interface PortfolioItem {

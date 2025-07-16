@@ -1,7 +1,9 @@
 // src/controllers/appointment.controller.ts
 import { Request, Response } from "express";
-import { DayOfWeek, PrismaClient } from "@prisma/client";
+import { AppointmentStatus, DayOfWeek, PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { ParamsDictionary } from "express-serve-static-core";
+import { ParsedQs } from "qs";
 
 const prisma = new PrismaClient();
 
@@ -283,3 +285,299 @@ export const cancelAppointment = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Ошибка при отмене записи" });
     }
 };
+
+export const getAllAppointments = async (req: Request, res: Response) => {
+    const {
+        page = 1,
+        limit = 10,
+        search,
+        status,
+        sortBy = 'id',
+        sortOrder = 'asc'
+    } = req.query;
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    try {
+        // Формирование условий фильтрации
+        let where: any = {};
+
+        // Фильтр по статусу
+        if (status && Object.values(AppointmentStatus).includes(status as AppointmentStatus)) {
+            where.status = status;
+        }
+
+        // Поиск по связанным данным
+        if (search) {
+            where.OR = [
+                { user: { name: { contains: search as string, mode: 'insensitive' } } },
+                { service: { name: { contains: search as string, mode: 'insensitive' } } },
+                { barber: { name: { contains: search as string, mode: 'insensitive' } } },
+                { barber: { barbershop: { name: { contains: search as string, mode: 'insensitive' } } } }
+            ];
+        }
+
+        // Сортировка
+        let orderBy: any = {};
+        const validSortFields = ['id', 'date', 'createdAt', 'status'];
+
+        if (validSortFields.includes(sortBy as string)) {
+            orderBy[sortBy as string] = sortOrder === 'desc' ? 'desc' : 'asc';
+        } else {
+            orderBy = { id: 'asc' };
+        }
+
+        // Запрос к БД
+        const [appointments, total] = await prisma.$transaction([
+            prisma.appointment.findMany({
+                where,
+                skip,
+                take: limitNum,
+                orderBy,
+                include: {
+                    user: { select: { id: true, name: true } },
+                    service: { select: { id: true, name: true } },
+                    barber: {
+                        select: {
+                            id: true,
+                            name: true,
+                            barbershop: { select: { id: true, name: true } }
+                        }
+                    }
+                }
+            }),
+            prisma.appointment.count({ where })
+        ]);
+
+        res.json({
+            data: appointments,
+            total,
+            totalPages: Math.ceil(total / limitNum),
+            currentPage: pageNum,
+        });
+    } catch (error) {
+        console.error("Error fetching appointments:", error);
+        res.status(500).json({ error: "Ошибка при получении записей" });
+    }
+};
+
+// Получение записи по ID
+export const getAppointmentById = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+
+    try {
+        const appointment = await prisma.appointment.findUnique({
+            where: { id },
+            include: {
+                user: { select: { id: true, name: true, email: true } },
+                service: { select: { id: true, name: true, price: true } },
+                barber: {
+                    select: {
+                        id: true,
+                        name: true,
+                        barbershop: { select: { id: true, name: true, address: true } }
+                    }
+                }
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ error: "Запись не найдена" });
+        }
+
+        res.json(appointment);
+    } catch (error) {
+        console.error("Error fetching appointment:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+};
+
+// Создание новой записи администратором
+export const createAdminAppointment = async (req: Request, res: Response) => {
+    const { userId, serviceId, barberId, date, startTime, status } = req.body;
+    const adminId = (req as any).user.userId;
+
+    try {
+        // Проверка существования связанных сущностей
+        const [user, service, barber] = await Promise.all([
+            prisma.user.findUnique({ where: { id: userId } }),
+            prisma.service.findUnique({ where: { id: serviceId } }),
+            prisma.barber.findUnique({
+                where: { id: barberId },
+                include: { barbershop: true }
+            })
+        ]);
+
+        if (!user) return res.status(400).json({ error: "Пользователь не найден" });
+        if (!service) return res.status(400).json({ error: "Услуга не найдена" });
+        if (!barber) return res.status(400).json({ error: "Барбер не найден" });
+
+        // Рассчет времени окончания
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const startDate = new Date(date);
+        startDate.setHours(hours, minutes, 0, 0);
+
+        const endDate = new Date(startDate.getTime() + service.duration * 60000);
+        const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
+        // Создание записи
+        const newAppointment = await prisma.appointment.create({
+            data: {
+                userId,
+                serviceId,
+                barberId,
+                date: startDate,
+                startTime,
+                endTime,
+                status: status || AppointmentStatus.NEW
+            }
+        });
+
+        // Аудит-лог
+        await prisma.auditLog.create({
+            data: {
+                userId: adminId,
+                action: "APPOINTMENT_CREATED",
+                details: {
+                    appointmentId: newAppointment.id,
+                    userId: user.id,
+                    barberId: barber.id,
+                    date: newAppointment.date.toISOString()
+                }
+            }
+        });
+
+        res.status(201).json(newAppointment);
+    } catch (error) {
+        console.error("Error creating appointment:", error);
+        res.status(500).json({ error: "Ошибка при создании записи" });
+    }
+};
+
+// Обновление записи
+export const updateAppointment = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const { status, date, startTime, serviceId, barberId } = req.body;
+    const adminId = (req as any).user.userId;
+
+    try {
+        // Получение текущей записи
+        const currentAppointment = await prisma.appointment.findUnique({
+            where: { id },
+            include: { service: true }
+        });
+
+        if (!currentAppointment) {
+            return res.status(404).json({ error: "Запись не найдена" });
+        }
+
+        // Рассчет нового времени окончания если изменилось время начала или услуга
+        let endTime = currentAppointment.endTime;
+        let finalDate = currentAppointment.date;
+
+        if (startTime || serviceId) {
+            const service = serviceId
+                ? await prisma.service.findUnique({ where: { id: serviceId } })
+                : currentAppointment.service;
+
+            if (!service) return res.status(400).json({ error: "Услуга не найдена" });
+
+            const time = startTime || currentAppointment.startTime;
+            const [hours, minutes] = time.split(':').map(Number);
+
+            const newDate = date
+                ? new Date(date)
+                : new Date(currentAppointment.date);
+
+            newDate.setHours(hours, minutes, 0, 0);
+            finalDate = newDate;
+
+            const endDate = new Date(newDate.getTime() + service.duration * 60000);
+            endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // Обновление записи
+        const updatedAppointment = await prisma.appointment.update({
+            where: { id },
+            data: {
+                status: status || currentAppointment.status,
+                date: finalDate,
+                startTime: startTime || currentAppointment.startTime,
+                endTime,
+                serviceId: serviceId || currentAppointment.serviceId,
+                barberId: barberId || currentAppointment.barberId
+            }
+        });
+
+        // Аудит-лог
+        await prisma.auditLog.create({
+            data: {
+                userId: adminId,
+                action: "APPOINTMENT_UPDATED",
+                details: {
+                    appointmentId: id,
+                    changes: {
+                        status: status,
+                        date: date,
+                        serviceId: serviceId,
+                        barberId: barberId
+                    }
+                }
+            }
+        });
+
+        res.json(updatedAppointment);
+    } catch (error) {
+        console.error("Error updating appointment:", error);
+        res.status(500).json({ error: "Ошибка при обновлении записи" });
+    }
+};
+
+// Удаление записи
+export const deleteAppointment = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+    const adminId = (req as any).user.userId;
+
+    try {
+        const appointment = await prisma.appointment.findUnique({
+            where: { id },
+            include: {
+                user: { select: { name: true } },
+                barber: { select: { name: true } }
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ error: "Запись не найдена" });
+        }
+
+        await prisma.appointment.delete({
+            where: { id }
+        });
+
+        // Аудит-лог
+        await prisma.auditLog.create({
+            data: {
+                userId: adminId,
+                action: "APPOINTMENT_DELETED",
+                details: {
+                    appointmentId: id,
+                    userName: appointment.user.name,
+                    barberName: appointment.barber.name,
+                    date: appointment.date.toISOString()
+                }
+            }
+        });
+
+        res.status(204).send();
+    } catch (error) {
+        console.error("Error deleting appointment:", error);
+        res.status(500).json({ error: "Ошибка при удалении записи" });
+    }
+};
+
+function validationResult(req: Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>) {
+    throw new Error("Function not implemented.");
+}
