@@ -1,25 +1,19 @@
 {
-    "routes": [
-        {
-            "src": "/api/.*",
-            "dest": "/api"
-        },
-        {
-            "src": "/static/.*",
-            "headers": {
-                "Cache-Control": "s-maxage=31536000, immutable"
-            }
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/",
-            "status": 200
-        }
-    ],
     "rewrites": [
         {
             "source": "/(.*)",
             "destination": "/index.html"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
         }
     ]
 }

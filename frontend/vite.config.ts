@@ -1,4 +1,3 @@
-// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -8,9 +7,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+    base: '/', // Убедитесь, что base установлен в корень
     plugins: [
         react(),
-        // Добавляем плагин для корректной обработки preload
         {
             name: 'configure-response-headers',
             configureServer: (server) => {
@@ -24,10 +23,6 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            // "jwt-decode": path.resolve(
-            //     __dirname,
-            //     "node_modules/jwt-decode/build/cjs/index.js"
-            // ),
             "@": path.resolve(__dirname, "./src"),
         },
     },
@@ -42,5 +37,19 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: ["jwt-decode"],
+    },
+    // Добавьте эту секцию для корректного деплоя на Vercel
+    build: {
+        outDir: "dist",
+        assetsDir: "assets",
+        rollupOptions: {
+            output: {
+                manualChunks: (id) => {
+                    if (id.includes("node_modules")) {
+                        return "vendor";
+                    }
+                },
+            },
+        },
     },
 });
