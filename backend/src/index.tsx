@@ -15,16 +15,34 @@ import adminRouter from './routes/admin.routes';
 dotenv.config();
 const app = express();
 
-app.use(
-    cors({
-        origin: "http://localhost:3000", // Адрес фронта
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true,
-    })
-);
+// Конфигурация CORS для продакшена
+const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [
+        process.env.FRONTEND_URL,
+        'https://your-vercel-app.vercel.app' // Замените на реальный URL фронта
+    ]
+    : ['http://localhost:3000'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+}));
+
 app.use(express.json());
 
-// 1) Роуты API
+// Health check endpoint
+app.get('/api/health', (_, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/barbershops", barbershopsRouter);
@@ -34,14 +52,16 @@ app.use("/api", dadataRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use('/api/admin', adminRouter);
 
-/// Статика фронта
-const distPath = path.resolve(__dirname, "../../frontend/dist");
-app.use(express.static(distPath));
-
-// Все остальные GET-запросы — на index.html
-app.get("*", (_, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+// Обработка ошибок
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Internal Server Error' });
 });
 
+// Для Render.com: Проверка PORT
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(`API: http://localhost:${PORT}/api`);
+    console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
+});
