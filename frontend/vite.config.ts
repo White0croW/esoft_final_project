@@ -31,10 +31,13 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
-    proxy: {
-        "/api": {
-            target: process.env.VITE_API_URL,
-            changeOrigin: true,
+    server: {
+        port: 3000,
+        proxy: {
+            "/api": {
+                target: "http://localhost:4000",
+                changeOrigin: true,
+            },
         },
     },
     optimizeDeps: {
