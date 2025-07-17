@@ -1,20 +1,19 @@
 {
     "compilerOptions": {
         "target": "ES2020",
-        "types": [
-            "node"
-        ],
-        "typeRoots": [
-            "./node_modules/@types",
-            "./src/types"
-        ],
         "module": "CommonJS",
         "outDir": "dist",
         "rootDir": "src",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "moduleResolution": "node"
+        "moduleResolution": "node",
+        "types": [
+            "node"
+        ],
+        "typeRoots": [
+            "./node_modules/@types"
+        ]
     },
     "include": [
         "src"
