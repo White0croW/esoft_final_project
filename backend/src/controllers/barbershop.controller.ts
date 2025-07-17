@@ -94,13 +94,13 @@ export const getCities = async (req: Request, res: Response) => {
 
         // Извлекаем города из адресов
         const cities = barbershops
-            .map(shop => {
+            .map((shop: { address: string; }) => {
                 // Пытаемся извлечь город из адреса (первая часть до запятой)
                 const match = shop.address.match(/^([^,]+)/);
                 return match ? match[1].trim() : null;
             })
-            .filter((city): city is string => !!city && city.length > 0)
-            .filter((city, index, self) => self.indexOf(city) === index) // Уникальные
+            .filter((city: string | null): city is string => !!city && city.length > 0)
+            .filter((city: any, index: any, self: string | any[]) => self.indexOf(city) === index) // Уникальные
             .sort();
 
         res.json(cities);

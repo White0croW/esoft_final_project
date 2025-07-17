@@ -55,7 +55,7 @@ export const getRecentActions = async (req: Request, res: Response) => {
             db.auditLog.count()
         ]);
 
-        const formattedActions = logs.map(log => ({
+        const formattedActions = logs.map((log: any) => ({
             id: log.id,
             action: log.action,
             timestamp: log.createdAt.toISOString(),

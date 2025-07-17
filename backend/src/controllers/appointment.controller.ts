@@ -1,11 +1,13 @@
 // src/controllers/appointment.controller.ts
 import { Request, Response } from "express";
-import { AppointmentStatus, DayOfWeek, PrismaClient } from "@prisma/client";
+import { PrismaClient, AppointmentStatus, DayOfWeek } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { ParamsDictionary } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 
 const prisma = new PrismaClient();
+
+
 
 interface TimeSlot {
     start: string;
@@ -79,7 +81,7 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
         const today = new Date(date);
         const dayOfWeek = today.getDay();
         const dayNames = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
-        const todayName = dayNames[dayOfWeek] as keyof typeof DayOfWeek;
+        const todayName = dayNames[dayOfWeek] as DayOfWeek;
 
         const barberSchedule = await prisma.barberSchedule.findFirst({
             where: {
@@ -121,7 +123,7 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
 
         // 5. Фильтрация занятых слотов
         const availableSlots = allSlots.filter(slot => {
-            return !existingAppointments.some(app => {
+            return !existingAppointments.some((app: { startTime: any; endTime: any; }) => {
                 const slotStart = slot.start;
                 const slotEnd = slot.end;
                 const appStart = app.startTime;
@@ -226,7 +228,7 @@ export const getMyAppointments = async (req: Request, res: Response) => {
             }
         });
 
-        const result = appointments.map(app => ({
+        const result = appointments.map((app) => ({
             id: app.id,
             date: app.date.toISOString(),
             startTime: app.startTime,

@@ -35,7 +35,7 @@ const router = express.Router();
 
 // Защищаем все роуты ролью ADMIN
 router.use(authMiddleware);
-router.use(requireRole([Role.ADMIN]));
+router.use(requireRole(Role.ADMIN));
 
 // Управление пользователями
 router.get('/users', getAllUsers);

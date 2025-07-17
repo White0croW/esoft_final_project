@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { Role } from '@prisma/client';
 import { AuthenticatedRequest } from '../types';
 
-export const requireRole = (allowedRoles: Role[]) => {
+
+export const requireRole = (allowedRoles: Role) => {
     return (req: Request, res: Response, next: NextFunction) => {
         const user = (req as AuthenticatedRequest).user;
 
