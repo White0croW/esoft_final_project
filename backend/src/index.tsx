@@ -19,7 +19,7 @@ const app = express();
 const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [
         process.env.FRONTEND_URL,
-        'https://your-vercel-app.vercel.app' // Замените на реальный URL фронта
+        'https://esoftfinalprojectprod.vercel.app/' // Замените на реальный URL фронта
     ]
     : ['http://localhost:3000'];
 
