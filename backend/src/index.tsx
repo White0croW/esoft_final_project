@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
-import process from 'process';
+import process from 'node:process';
 import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 

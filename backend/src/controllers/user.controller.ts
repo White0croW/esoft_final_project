@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { PrismaClient } from "@prisma/client";
 import { validationResult } from "express-validator";
 
 const db = new PrismaClient();

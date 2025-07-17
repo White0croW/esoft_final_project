@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { verifyJwt } from "../utils/jwt";
 import { PrismaClient } from "@prisma/client";
 

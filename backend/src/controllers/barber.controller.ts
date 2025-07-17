@@ -1,5 +1,5 @@
 // src/controllers/barber.controller.ts
-import { Request, Response } from "express";
+import express, { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

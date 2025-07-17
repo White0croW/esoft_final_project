@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { signJwt } from "../utils/jwt";
 import { PrismaClient } from "@prisma/client";

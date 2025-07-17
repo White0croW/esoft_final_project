@@ -1,5 +1,5 @@
 import { ZodError, AnyZodObject } from "zod";
-import { Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { body, validationResult } from 'express-validator';
 import { Role } from '@prisma/client';
 

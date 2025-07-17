@@ -1,8 +1,8 @@
 // src/routes/barbershops.routes.ts
-import { Router } from "express";
+import express from "express";
 import { getBarbershops, getBarbershopById, getCities } from "../controllers/barbershop.controller";
 
-const router = Router();
+const router = express.Router();
 
 router.get("/", getBarbershops);
 router.get("/:id", getBarbershopById);

@@ -1,4 +1,5 @@
 import jwt, { SignOptions, JwtPayload as DefaultPayload } from "jsonwebtoken";
+import process from 'node:process';
 
 export interface JwtSignPayload {
     userId: number;

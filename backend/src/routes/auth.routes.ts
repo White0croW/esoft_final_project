@@ -1,10 +1,10 @@
-import { Router } from "express";
+import express from "express";
 import { signup, signin, me } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { z } from "zod";
 import { validate } from "../utils/validation";
 
-const router = Router();
+const router = express.Router();
 
 // 1) Расширили signupSchema: добавили опциональное поле phone
 const signupSchema = z.object({

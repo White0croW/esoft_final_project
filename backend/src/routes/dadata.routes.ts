@@ -4,7 +4,7 @@ import fetch from "node-fetch";
 
 const router = express.Router();
 
-router.post("/suggest/address", async (req, res) => {
+router.post("/suggest/address", async (req: express.Request, res: express.Response) => {
     const { query } = req.body;
     try {
         const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {

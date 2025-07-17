@@ -1,4 +1,3 @@
-import { Router } from "express";
 import {
     getProfile,
     updateProfile,
@@ -6,7 +5,8 @@ import {
 } from "../controllers/user.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
-const router = Router();
+import express from "express";
+const router = express.Router();
 
 // Все маршруты требуют авторизации
 router.use(authMiddleware);

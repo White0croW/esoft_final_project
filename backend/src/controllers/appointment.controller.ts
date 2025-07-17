@@ -1,7 +1,8 @@
 // src/controllers/appointment.controller.ts
-import { Request, Response } from "express";
-import { PrismaClient, AppointmentStatus, DayOfWeek } from "@prisma/client";
+import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import process from 'node:process';
+import { PrismaClient, AppointmentStatus, DayOfWeek } from "@prisma/client";
 import { ParamsDictionary } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 

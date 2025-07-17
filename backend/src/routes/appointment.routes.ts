@@ -1,4 +1,3 @@
-import { Router } from "express";
 import {
     createAppointment,
     getMyAppointments,
@@ -6,7 +5,8 @@ import {
 } from "../controllers/appointment.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
-const router = Router();
+import express from "express";
+const router = express.Router();
 
 router.post("/", authMiddleware, createAppointment);
 
