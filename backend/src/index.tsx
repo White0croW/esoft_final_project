@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
-import cors from "cors";
+import process from 'process';
+import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes";
@@ -15,17 +16,25 @@ import adminRouter from './routes/admin.routes';
 dotenv.config();
 const app = express();
 
-// Конфигурация CORS для продакшена
-const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [
-        process.env.FRONTEND_URL,
-        'https://esoftfinalprojectprod.vercel.app/' // Замените на реальный URL фронта
-    ]
-    : ['http://localhost:3000'];
+// Конфигурация CORS
+const allowedOrigins: string[] = [];
 
-app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+if (process.env.NODE_ENV === 'production') {
+    // Добавляем дополнительные домены для продакшена
+    allowedOrigins.push(
+        'https://esoftfinalprojectprod.vercel.app'
+    );
+} else {
+    allowedOrigins.push('http://localhost:3000');
+}
+
+const corsOptions: CorsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
@@ -33,12 +42,13 @@ app.use(cors({
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-}));
+};
 
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
-app.get('/api/health', (_, res) => {
+app.get('/api/health', (_: Request, res: Response) => {
     res.status(200).json({ status: 'ok' });
 });
 
@@ -53,8 +63,13 @@ app.use("/api/appointments", appointmentRoutes);
 app.use('/api/admin', adminRouter);
 
 // Обработка ошибок
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error(err.stack);
+
+    if (err.message === 'Not allowed by CORS') {
+        return res.status(403).json({ error: 'CORS Error: Access denied' });
+    }
+
     res.status(500).json({ error: 'Internal Server Error' });
 });
 
