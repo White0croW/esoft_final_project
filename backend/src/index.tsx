@@ -26,7 +26,9 @@ if (process.env.FRONTEND_URL) {
 if (process.env.NODE_ENV === 'production') {
     // Добавляем дополнительные домены для продакшена
     allowedOrigins.push(
-        'https://esoftfinalprojectprod.vercel.app'
+        'https://esoft-final-project.vercel.app',
+        'https://esoft-final-project-marks-projects-531ff81c.vercel.app',
+        'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address'
     );
 } else {
     allowedOrigins.push('http://localhost:3000');
