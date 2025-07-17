@@ -29,6 +29,7 @@ import { NavLink } from 'react-router-dom';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { fetchAddressSuggestions } from '@/api/dadata';
 
 // Конфигурируем маркеры
 L.Icon.Default.mergeOptions({
@@ -150,12 +151,7 @@ export default function Home() {
             return;
         }
         try {
-            const res = await fetch("/api/suggest/address", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: q }),
-            });
-            const { suggestions } = await res.json();
+            const suggestions = await fetchAddressSuggestions(q);
             setAddrOptions(suggestions || []);
         } catch (err) {
             console.error("Ошибка запроса к backend:", err);
