@@ -142,6 +142,36 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
     }
 };
 
+async function hasUserAppointmentConflict(
+    userId: number,
+    date: Date,
+    startTime: string,
+    endTime: string
+): Promise<boolean> {
+    const startOfDay = new Date(date);
+    const endOfDay = new Date(date);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const existingAppointments = await prisma.appointment.findMany({
+        where: {
+            userId,
+            date: {
+                gte: startOfDay,
+                lt: endOfDay
+            },
+            status: { in: ["NEW", "CONFIRMED"] },
+            OR: [
+                {
+                    startTime: { lt: endTime },
+                    endTime: { gt: startTime }
+                }
+            ]
+        }
+    });
+
+    return existingAppointments.length > 0;
+}
+
 export const createAppointment = [
     authenticate,
     async (req: Request, res: Response) => {
@@ -166,6 +196,20 @@ export const createAppointment = [
             const endDate = new Date(startDate);
             endDate.setMinutes(endDate.getMinutes() + service.duration);
             const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
+            // 3. Проверить, нет ли у пользователя другой записи на это время
+            const userConflict = await hasUserAppointmentConflict(
+                userId,
+                new Date(date),
+                startTime,
+                endTime
+            );
+
+            if (userConflict) {
+                return res.status(409).json({
+                    error: "У вас уже есть запись на это время к другому барберу"
+                });
+            }
 
             // 3. Проверить доступность слота
             const existingAppointment = await prisma.appointment.findFirst({
@@ -422,6 +466,20 @@ export const createAdminAppointment = async (req: Request, res: Response) => {
         const endDate = new Date(startDate.getTime() + service.duration * 60000);
         const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
 
+        // 3. Проверить, нет ли у пользователя другой записи на это время
+        const userConflict = await hasUserAppointmentConflict(
+            userId,
+            new Date(date),
+            startTime,
+            endTime
+        );
+
+        if (userConflict) {
+            return res.status(409).json({
+                error: "У вас уже есть запись на это время к другому барберу"
+            });
+        }
+
         // Создание записи
         const newAppointment = await prisma.appointment.create({
             data: {
@@ -496,6 +554,20 @@ export const updateAppointment = async (req: Request, res: Response) => {
 
             const endDate = new Date(newDate.getTime() + service.duration * 60000);
             endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // 3. Проверить, нет ли у пользователя другой записи на это время
+        const userConflict = await hasUserAppointmentConflict(
+            id,
+            new Date(date),
+            startTime,
+            endTime
+        );
+
+        if (userConflict) {
+            return res.status(409).json({
+                error: "У вас уже есть запись на это время к другому барберу"
+            });
         }
 
         // Обновление записи

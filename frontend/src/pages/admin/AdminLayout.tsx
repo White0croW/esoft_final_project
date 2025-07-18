@@ -33,7 +33,6 @@ const navigationItems = [
     { text: 'Барберы', path: 'barbers', icon: <ContentCutIcon /> },
     { text: 'Услуги', path: 'services', icon: <ServicesIcon /> },
     { text: 'Записи', path: 'appointments', icon: <CalendarIcon /> },
-    { text: 'Портфолио', path: 'portfolio', icon: <PortfolioIcon /> }
 ];
 
 const StyledNavLink = styled(NavLink)(({ theme }) => ({

@@ -121,7 +121,7 @@ export default function SignIn() {
         } catch (err: any) {
             setSnackbar({
                 open: true,
-                message: err.message || "Ошибка входа. Проверьте данные",
+                message: "Ошибка входа. Проверьте данные",
                 severity: "error",
             });
             setLoading(false);
