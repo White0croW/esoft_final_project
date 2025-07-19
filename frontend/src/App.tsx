@@ -39,8 +39,24 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
             <Routes>
                 <Route element={<Layout />}>
-                    {/* Публичные маршруты */}
                     <Route index element={<Home />} />
+
+                    <Route path="barbershops" element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                            <BarbershopsList />
+                        </Suspense>
+                    } />
+                    <Route path="barbershops/:id" element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                            <BarbershopDetail />
+                        </Suspense>
+                    } />
+                    <Route path="barbers/:id" element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                            <BarberDetail />
+                        </Suspense>
+                    } />
+                    {/* Публичные маршруты */}
                     <Route element={<PublicRoute />}>
                         <Route path="signin" element={
                             <Suspense fallback={<LoadingSpinner />}>
@@ -50,22 +66,6 @@ export default function App() {
                         <Route path="signup" element={
                             <Suspense fallback={<LoadingSpinner />}>
                                 <SignUp />
-                            </Suspense>
-                        } />
-
-                        <Route path="barbershops" element={
-                            <Suspense fallback={<LoadingSpinner />}>
-                                <BarbershopsList />
-                            </Suspense>
-                        } />
-                        <Route path="barbershops/:id" element={
-                            <Suspense fallback={<LoadingSpinner />}>
-                                <BarbershopDetail />
-                            </Suspense>
-                        } />
-                        <Route path="barbers/:id" element={
-                            <Suspense fallback={<LoadingSpinner />}>
-                                <BarberDetail />
                             </Suspense>
                         } />
                     </Route>

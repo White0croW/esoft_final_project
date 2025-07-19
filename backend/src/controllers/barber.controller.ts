@@ -1,4 +1,3 @@
-// src/controllers/barber.controller.ts
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
@@ -9,7 +8,10 @@ export const getBarberById = async (req: Request, res: Response) => {
     try {
         const barber = await prisma.barber.findUnique({
             where: { id },
-            include: { services: true },
+            include: {
+                services: true,
+                barbershop: true
+            },
         });
 
         if (!barber) {
@@ -18,9 +20,10 @@ export const getBarberById = async (req: Request, res: Response) => {
 
         res.json(barber);
     } catch (error) {
+        console.error("Barber fetch error:", error);
         res.status(500).json({
             error: "Ошибка сервера",
-            details: error
+            details: error instanceof Error ? error.message : "Unknown error"
         });
     }
 };
@@ -41,12 +44,16 @@ export const getAllBarbers = async (req: Request, res: Response) => {
     try {
         let where: any = {};
         if (search) {
+            const searchStr = search as string;
+            const isInteger = /^-?\d+$/.test(searchStr);
+            const searchNum = isInteger ? parseInt(searchStr) : NaN;
+
             where = {
                 OR: [
-                    { id: { contains: search as string, mode: 'insensitive' } },
-                    { rating: { contains: search as string, mode: 'insensitive' } },
-                    { name: { contains: search as string, mode: 'insensitive' } },
-                    { specialization: { contains: search as string, mode: 'insensitive' } },
+                    ...(isInteger ? [{ id: searchNum }] : []),
+                    { name: { contains: searchStr, mode: 'insensitive' } },
+                    { specialization: { contains: searchStr, mode: 'insensitive' } },
+                    { barbershop: { name: { contains: searchStr, mode: 'insensitive' } } },
                 ],
             };
         }
@@ -68,7 +75,11 @@ export const getAllBarbers = async (req: Request, res: Response) => {
                 orderBy,
                 include: {
                     barbershop: {
-                        select: { name: true }
+                        select: {
+                            id: true,
+                            name: true,
+                            address: true
+                        }
                     }
                 }
             }),
@@ -82,19 +93,29 @@ export const getAllBarbers = async (req: Request, res: Response) => {
             currentPage: pageNum,
         });
     } catch (error) {
-        res.status(500).json({ error: "Ошибка при получении мастеров" });
+        console.error("Barbers fetch error:", error);
+        res.status(500).json({
+            error: "Ошибка при получении мастеров",
+            details: error instanceof Error ? error.message : "Unknown error"
+        });
     }
 };
 
 export const createBarber = async (req: Request, res: Response) => {
-    const { name, specialization, barbershopId } = req.body;
+    const { name, specialization, barbershopId, rating } = req.body;
     const userId = (req as any).user?.userId;
 
     try {
+        // Валидация данных
+        if (!name) {
+            return res.status(400).json({ error: "Имя мастера обязательно" });
+        }
+
         const newBarber = await prisma.barber.create({
             data: {
                 name,
                 specialization,
+                rating: rating ? parseFloat(rating) : 0,
                 barbershopId: barbershopId ? parseInt(barbershopId) : null
             }
         });
@@ -115,21 +136,32 @@ export const createBarber = async (req: Request, res: Response) => {
 
         res.status(201).json(newBarber);
     } catch (error) {
-        res.status(500).json({ error: "Ошибка при создании мастера" });
+        console.error("Barber create error:", error);
+        res.status(500).json({
+            error: "Ошибка при создании мастера",
+            details: error instanceof Error ? error.message : "Unknown error"
+        });
     }
 };
 
 export const updateBarber = async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
-    const { name, specialization, barbershopId } = req.body;
+    const { name, specialization, barbershopId, rating } = req.body;
     const userId = (req as any).user?.userId;
 
     try {
+        // Проверка существования барбера
+        const existingBarber = await prisma.barber.findUnique({ where: { id } });
+        if (!existingBarber) {
+            return res.status(404).json({ error: "Мастер не найден" });
+        }
+
         const updatedBarber = await prisma.barber.update({
             where: { id },
             data: {
                 name,
                 specialization,
+                rating: rating ? parseFloat(rating) : existingBarber.rating,
                 barbershopId: barbershopId ? parseInt(barbershopId) : null
             }
         });
@@ -142,7 +174,13 @@ export const updateBarber = async (req: Request, res: Response) => {
                     action: "BARBER_UPDATED",
                     details: {
                         barberId: id,
-                        name: updatedBarber.name
+                        name: updatedBarber.name,
+                        changes: {
+                            name: existingBarber.name !== name,
+                            specialization: existingBarber.specialization !== specialization,
+                            barbershopId: existingBarber.barbershopId !== barbershopId,
+                            rating: existingBarber.rating !== rating
+                        }
                     }
                 }
             });
@@ -150,7 +188,11 @@ export const updateBarber = async (req: Request, res: Response) => {
 
         res.json(updatedBarber);
     } catch (error) {
-        res.status(500).json({ error: "Ошибка при обновлении мастера" });
+        console.error("Barber update error:", error);
+        res.status(500).json({
+            error: "Ошибка при обновлении мастера",
+            details: error instanceof Error ? error.message : "Unknown error"
+        });
     }
 };
 
@@ -166,6 +208,18 @@ export const deleteBarber = async (req: Request, res: Response) => {
 
         if (!barber) {
             return res.status(404).json({ error: "Мастер не найден" });
+        }
+
+        // Проверка связанных записей
+        const appointments = await prisma.appointment.count({
+            where: { barberId: id }
+        });
+
+        if (appointments > 0) {
+            return res.status(400).json({
+                error: "Нельзя удалить мастера с активными записями",
+                appointmentsCount: appointments
+            });
         }
 
         await prisma.barber.delete({
@@ -188,6 +242,10 @@ export const deleteBarber = async (req: Request, res: Response) => {
 
         res.status(204).send();
     } catch (error) {
-        res.status(500).json({ error: "Ошибка при удалении мастера" });
+        console.error("Barber delete error:", error);
+        res.status(500).json({
+            error: "Ошибка при удалении мастера",
+            details: error instanceof Error ? error.message : "Unknown error"
+        });
     }
 };
