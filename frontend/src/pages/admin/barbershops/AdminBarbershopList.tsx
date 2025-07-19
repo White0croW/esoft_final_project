@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     Button,
     Table,
@@ -13,70 +13,137 @@ import {
     Pagination,
     Box,
     CircularProgress,
-    Alert,
-    TextField
+    TextField,
+    Tooltip,
+    IconButton,
+    Typography,
+    Alert
 } from '@mui/material';
+import {
+    Add as AddIcon,
+    Search as SearchIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Refresh as RefreshIcon,
+    Clear as ClearIcon,
+    Check as CheckIcon
+} from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
+import { keyframes } from '@mui/system';
 import { BarberShop } from '../../../types';
-import api from '../../../api/base';
+import { adminBarbershopApi } from '../../../api/admin/barbershops';
 import { useAuth } from '../../../contexts/AuthContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { useDebounce } from 'use-debounce';
 
+// Анимации
+const highlightAnimation = keyframes`
+  0% { background-color: rgba(110, 231, 183, 0.8); }
+  70% { background-color: rgba(110, 231, 183, 0.3); }
+  100% { background-color: transparent; }
+`;
+
+const fadeOutAnimation = keyframes`
+  0% { opacity: 1; transform: scaleY(1); height: auto; }
+  70% { background-color: rgba(254, 226, 226, 0.7); }
+  100% { opacity: 0; transform: scaleY(0); height: 0; padding: 0; margin: 0; }
+`;
+
 type SortField = 'id' | 'name' | 'address' | 'lat' | 'lon' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
+
+interface GetBarbershopsParams {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
 
 const AdminBarbershopList: React.FC = () => {
     const [barbershops, setBarbershops] = useState<BarberShop[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [initialLoading, setInitialLoading] = useState(true);
     const { user: currentUser } = useAuth();
+    const { enqueueSnackbar } = useSnackbar();
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const [sortField, setSortField] = useState<SortField>('id');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [totalItems, setTotalItems] = useState(0);
     const itemsPerPage = 10;
     const [searchInput, setSearchInput] = useState('');
     const [debouncedSearch] = useDebounce(searchInput, 500);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [highlightedIds, setHighlightedIds] = useState<number[]>([]);
+    const [removingIds, setRemovingIds] = useState<number[]>([]);
+    const [error, setError] = useState('');
 
-    // Реф для сохранения фокуса на поле поиска
     const searchInputRef = useRef<HTMLInputElement>(null);
-
     const isMountedRef = useRef(true);
+
+    // Обработка подсвеченных элементов из URL
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const highlightedId = params.get('highlight');
+
+        if (highlightedId) {
+            const id = parseInt(highlightedId);
+            if (!isNaN(id)) {
+                setHighlightedIds(prev => [...prev, id]);
+                params.delete('highlight');
+                navigate({ search: params.toString() }, { replace: true });
+
+                setTimeout(() => {
+                    const element = document.getElementById(`barbershop-${id}`);
+                    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500);
+
+                setTimeout(() => {
+                    setHighlightedIds(prev => prev.filter(item => item !== id));
+                }, 5000);
+            }
+        }
+    }, [location.search, navigate]);
 
     const fetchBarbershops = async () => {
         if (!currentUser || currentUser.role !== 'ADMIN') return;
 
         try {
             setLoading(true);
-            const response = await api.get(`/admin/barbershops`, {
-                params: {
-                    search: debouncedSearch,
-                    page,
-                    limit: itemsPerPage,
-                    sortBy: sortField,
-                    sortOrder: sortDirection
-                }
-            });
+            const params: GetBarbershopsParams = {
+                page,
+                limit: itemsPerPage,
+                search: debouncedSearch,
+                sortBy: sortField,
+                sortOrder: sortDirection
+            };
+
+            const response = await adminBarbershopApi.getAll(params);
 
             if (isMountedRef.current) {
-                setBarbershops(response.data.data);
-                setTotalPages(response.data.totalPages);
-
-                // Возвращаем фокус на поле поиска после загрузки
-                if (searchInputRef.current) {
-                    searchInputRef.current.focus();
-                }
+                setBarbershops(response.data);
+                setTotalPages(response.totalPages);
+                setTotalItems(response.total);
+                setError('');
             }
-        } catch (error) {
+        } catch (error: any) {
             if (isMountedRef.current) {
-                setError('Не удалось загрузить список барбершопов');
-                setBarbershops([]);
+                const errorMessage = error.response?.data?.error ||
+                    'Не удалось загрузить список барбершопов';
+                setError(errorMessage);
+                enqueueSnackbar(errorMessage, {
+                    variant: 'error',
+                    autoHideDuration: 3000
+                });
             }
         } finally {
             if (isMountedRef.current) {
                 setLoading(false);
+                if (initialLoading) setInitialLoading(false);
             }
         }
     };
@@ -85,14 +152,13 @@ const AdminBarbershopList: React.FC = () => {
         isMountedRef.current = true;
         fetchBarbershops();
 
-        return () => {
-            isMountedRef.current = false;
-        };
-    }, [currentUser, debouncedSearch, page, sortField, sortDirection]);
+        return () => { isMountedRef.current = false; };
+    }, [currentUser, page, debouncedSearch, sortField, sortDirection]);
 
     const handleSort = (field: SortField) => {
         const isAsc = sortField === field && sortDirection === 'asc';
-        setSortDirection(isAsc ? 'desc' : 'asc');
+        const newDirection = isAsc ? 'desc' : 'asc';
+        setSortDirection(newDirection);
         setSortField(field);
         setPage(1);
     };
@@ -101,27 +167,53 @@ const AdminBarbershopList: React.FC = () => {
         if (window.confirm('Вы уверены, что хотите удалить этот барбершоп?')) {
             try {
                 setDeletingId(id);
-                await api.delete(`/admin/barbershops/${id}`);
+                setRemovingIds(prev => [...prev, id]);
 
-                await fetchBarbershops();
+                await adminBarbershopApi.delete(id);
 
-                if (barbershops.length === 1 && page > 1) {
-                    setPage(page - 1);
-                }
+                enqueueSnackbar('Барбершоп успешно удалён', {
+                    variant: 'success',
+                    autoHideDuration: 2000
+                });
 
-                // Возвращаем фокус на поле поиска после удаления
-                if (searchInputRef.current) {
-                    searchInputRef.current.focus();
-                }
-            } catch (error) {
-                setError('Не удалось удалить барбершоп');
+                setTimeout(async () => {
+                    await fetchBarbershops();
+                    setRemovingIds(prev => prev.filter(item => item !== id));
+
+                    if (barbershops.length === 1 && page > 1) {
+                        setPage(prevPage => prevPage - 1);
+                    }
+                }, 700);
+
+                searchInputRef.current?.focus();
+            } catch (error: any) {
+                setRemovingIds(prev => prev.filter(item => item !== id));
+                const errorMessage = error.response?.data?.error ||
+                    'Не удалось удалить барбершоп';
+                enqueueSnackbar(errorMessage, {
+                    variant: 'error',
+                    autoHideDuration: 3000
+                });
             } finally {
                 setDeletingId(null);
             }
         }
     };
 
-    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    const handleRefresh = async () => {
+        await fetchBarbershops();
+        enqueueSnackbar('Данные обновлены', {
+            variant: 'info',
+            autoHideDuration: 1500
+        });
+    };
+
+    const handleClearSearch = () => {
+        setSearchInput('');
+        searchInputRef.current?.focus();
+    };
+
+    const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
         setPage(value);
     };
 
@@ -130,44 +222,164 @@ const AdminBarbershopList: React.FC = () => {
         setPage(1);
     };
 
-    if (loading) return <LoadingSpinner />;
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    if (initialLoading) return <LoadingSpinner />;
     if (!currentUser || currentUser.role !== 'ADMIN') return null;
 
     return (
-        <div>
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-                    {error}
-                </Alert>
-            )}
+        <Box sx={{ p: 3, backgroundColor: '#f9fafb', minHeight: '100vh' }}>
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3,
+                    backgroundColor: 'white',
+                    borderRadius: 2,
+                    p: 3,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                }}>
+                    <Box>
+                        <Typography variant="h4" component="h1" sx={{
+                            fontWeight: 700,
+                            color: '#2d3748',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                        }}>
+                            Управление барбершопами
+                            <Tooltip title="Обновить данные">
+                                <IconButton
+                                    color="primary"
+                                    onClick={handleRefresh}
+                                    sx={{ ml: 1 }}
+                                >
+                                    <RefreshIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: '#718096', mt: 1 }}>
+                            Всего барбершопов: {totalItems}
+                        </Typography>
+                    </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Button
-                    component={Link}
-                    to="/admin/barbershops/new"
-                    variant="contained"
-                >
-                    Добавить барбершоп
-                </Button>
+                    <Button
+                        component={Link}
+                        to="/admin/barbershops/new"
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        sx={{
+                            bgcolor: '#4f46e5',
+                            '&:hover': { bgcolor: '#4338ca' },
+                            height: 45,
+                            px: 3,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)'
+                        }}
+                    >
+                        Добавить барбершоп
+                    </Button>
+                </Box>
 
-                <TextField
-                    inputRef={searchInputRef}
-                    label="Поиск по всем полям"
-                    variant="outlined"
-                    size="small"
-                    value={searchInput}
-                    onChange={handleSearchChange}
-                    placeholder="Введите для поиска..."
-                    sx={{ width: 300 }}
-                    autoFocus
-                />
+                {error && (
+                    <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                    backgroundColor: 'white',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                }}>
+                    <TextField
+                        inputRef={searchInputRef}
+                        label="Поиск барбершопов"
+                        variant="outlined"
+                        size="small"
+                        value={searchInput}
+                        onChange={handleSearchChange}
+                        placeholder="Введите название, адрес или ID..."
+                        sx={{
+                            width: 350,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                paddingRight: 1
+                            }
+                        }}
+                        InputProps={{
+                            startAdornment: (
+                                <SearchIcon sx={{ color: '#a0aec0', mr: 1 }} />
+                            ),
+                            endAdornment: searchInput && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearSearch}
+                                    sx={{ color: '#a0aec0' }}
+                                >
+                                    <ClearIcon fontSize="small" />
+                                </IconButton>
+                            )
+                        }}
+                    />
+
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: '#718096', alignSelf: 'center' }}>
+                            Страница {page} из {totalPages}
+                        </Typography>
+                    </Box>
+                </Box>
             </Box>
 
-            <TableContainer component={Paper}>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                    mb: 3,
+                    position: 'relative',
+                    minHeight: 400
+                }}
+            >
+                {loading && !initialLoading && (
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        zIndex: 10
+                    }}>
+                        <CircularProgress size={60} thickness={4} sx={{ color: '#4f46e5' }} />
+                    </Box>
+                )}
+
                 <Table>
-                    <TableHead>
+                    <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                         <TableRow>
-                            <TableCell sortDirection={sortField === 'id' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'id'}
                                     direction={sortField === 'id' ? sortDirection : 'asc'}
@@ -176,7 +388,7 @@ const AdminBarbershopList: React.FC = () => {
                                     ID
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'name' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'name'}
                                     direction={sortField === 'name' ? sortDirection : 'asc'}
@@ -185,7 +397,7 @@ const AdminBarbershopList: React.FC = () => {
                                     Название
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'address' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'address'}
                                     direction={sortField === 'address' ? sortDirection : 'asc'}
@@ -194,7 +406,7 @@ const AdminBarbershopList: React.FC = () => {
                                     Адрес
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'lat' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'lat'}
                                     direction={sortField === 'lat' ? sortDirection : 'asc'}
@@ -203,7 +415,7 @@ const AdminBarbershopList: React.FC = () => {
                                     Широта
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'lon' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'lon'}
                                     direction={sortField === 'lon' ? sortDirection : 'asc'}
@@ -212,7 +424,7 @@ const AdminBarbershopList: React.FC = () => {
                                     Долгота
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'createdAt' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'createdAt'}
                                     direction={sortField === 'createdAt' ? sortDirection : 'asc'}
@@ -221,47 +433,117 @@ const AdminBarbershopList: React.FC = () => {
                                     Дата создания
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>Действия</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748', width: 150 }}>Действия</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {barbershops.length > 0 ? (
-                            barbershops.map((barbershop) => (
-                                <TableRow key={barbershop.id}>
-                                    <TableCell>{barbershop.id}</TableCell>
-                                    <TableCell>{barbershop.name}</TableCell>
+                        {barbershops.length > 0 ? barbershops.map((barbershop) => {
+                            const isHighlighted = highlightedIds.includes(barbershop.id);
+                            const isRemoving = removingIds.includes(barbershop.id);
+
+                            return (
+                                <TableRow
+                                    key={barbershop.id}
+                                    id={`barbershop-${barbershop.id}`}
+                                    sx={{
+                                        '&:nth-of-type(even)': { bgcolor: '#f8fafc' },
+                                        '&:hover': { bgcolor: '#f1f5f9' },
+                                        ...(isHighlighted && {
+                                            animation: `${highlightAnimation} 2s ease`,
+                                            boxShadow: '0 0 8px rgba(110, 231, 183, 0.5)'
+                                        }),
+                                        ...(isRemoving && {
+                                            animation: `${fadeOutAnimation} 0.7s forwards`,
+                                            transformOrigin: 'top'
+                                        })
+                                    }}
+                                >
+                                    <TableCell sx={{ fontWeight: 500 }}>
+                                        {barbershop.id}
+                                        {isHighlighted && (
+                                            <CheckIcon sx={{
+                                                color: 'green',
+                                                ml: 1,
+                                                verticalAlign: 'middle',
+                                                fontSize: '1rem'
+                                            }} />
+                                        )}
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>{barbershop.name}</TableCell>
                                     <TableCell>{barbershop.address}</TableCell>
                                     <TableCell>{barbershop.lat?.toFixed(6)}</TableCell>
                                     <TableCell>{barbershop.lon?.toFixed(6)}</TableCell>
+                                    <TableCell>{formatDate(barbershop.createdAt)}</TableCell>
                                     <TableCell>
-                                        {new Date(barbershop.createdAt).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button
-                                            component={Link}
-                                            to={`/admin/barbershops/${barbershop.id}`}
-                                            size="small"
-                                            sx={{ mr: 1 }}
-                                        >
-                                            Редактировать
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleDelete(barbershop.id)}
-                                            color="error"
-                                            size="small"
-                                            disabled={deletingId === barbershop.id}
-                                        >
-                                            {deletingId === barbershop.id
-                                                ? <CircularProgress size={24} />
-                                                : 'Удалить'}
-                                        </Button>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Tooltip title="Редактировать" arrow>
+                                                <IconButton
+                                                    component={Link}
+                                                    to={`/admin/barbershops/${barbershop.id}`}
+                                                    size="small"
+                                                    color="primary"
+                                                    sx={{
+                                                        bgcolor: '#e0f2fe',
+                                                        '&:hover': { bgcolor: '#bae6fd' }
+                                                    }}
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Удалить" arrow>
+                                                <IconButton
+                                                    onClick={() => handleDelete(barbershop.id)}
+                                                    size="small"
+                                                    color="error"
+                                                    disabled={deletingId === barbershop.id}
+                                                    sx={{
+                                                        bgcolor: '#fee2e2',
+                                                        '&:hover': { bgcolor: '#fecaca' },
+                                                        '&:disabled': { bgcolor: '#f3f4f6' }
+                                                    }}
+                                                >
+                                                    {deletingId === barbershop.id ? (
+                                                        <CircularProgress size={20} color="error" />
+                                                    ) : (
+                                                        <DeleteIcon fontSize="small" />
+                                                    )}
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        ) : (
+                            );
+                        }) : (
                             <TableRow>
-                                <TableCell colSpan={7} align="center">
-                                    {debouncedSearch ? "По вашему запросу ничего не найдено" : "Барбершопы не найдены"}
+                                <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                                    <Box sx={{ textAlign: 'center', color: '#718096' }}>
+                                        <SearchIcon sx={{ fontSize: 60, mb: 2, color: '#cbd5e0' }} />
+                                        <Typography variant="h6" sx={{ mb: 1 }}>
+                                            {debouncedSearch ? "Барбершопы не найдены" : "Список барбершопов пуст"}
+                                        </Typography>
+                                        <Typography variant="body1" sx={{ mb: 3 }}>
+                                            {debouncedSearch
+                                                ? "Попробуйте изменить условия поиска"
+                                                : "Добавьте первый барбершоп"}
+                                        </Typography>
+                                        {!debouncedSearch && (
+                                            <Button
+                                                component={Link}
+                                                to="/admin/barbershops/new"
+                                                variant="contained"
+                                                startIcon={<AddIcon />}
+                                                sx={{
+                                                    bgcolor: '#4f46e5',
+                                                    '&:hover': { bgcolor: '#4338ca' },
+                                                    borderRadius: 2,
+                                                    textTransform: 'none',
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                Добавить барбершоп
+                                            </Button>
+                                        )}
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         )}
@@ -270,16 +552,39 @@ const AdminBarbershopList: React.FC = () => {
             </TableContainer>
 
             {totalPages > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mt: 3,
+                    backgroundColor: 'white',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                }}>
                     <Pagination
                         count={totalPages}
                         page={page}
                         onChange={handlePageChange}
                         color="primary"
+                        shape="rounded"
+                        size="large"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontWeight: 600,
+                                borderRadius: 1.5
+                            },
+                            '& .Mui-selected': {
+                                bgcolor: '#4f46e5',
+                                color: 'white',
+                                '&:hover': {
+                                    bgcolor: '#4338ca'
+                                }
+                            }
+                        }}
                     />
                 </Box>
             )}
-        </div>
+        </Box>
     );
 };
 

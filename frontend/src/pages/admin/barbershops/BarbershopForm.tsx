@@ -8,29 +8,23 @@ import {
     Alert,
     CircularProgress,
     Grid,
-    Autocomplete
+    Autocomplete,
+    InputAdornment
 } from '@mui/material';
-import api from '../../../api/base';
+import { LocationOn as LocationIcon } from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
 import { useAuth } from '../../../contexts/AuthContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { BarberShop } from '../../../types';
-
-// Тип для подсказок DaData
-interface DadataSuggestion {
-    value: string;
-    data: {
-        geo_lat: string;
-        geo_lon: string;
-        [key: string]: any;
-    };
-}
+import { DadataSuggestion } from '../../../types';
+import { adminBarbershopApi } from '../../../api/admin/barbershops';
 
 const BarbershopForm: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
+    const { enqueueSnackbar } = useSnackbar();
     const [loading, setLoading] = useState(!!id);
-    const [formData, setFormData] = useState<Omit<BarberShop, 'id' | 'createdAt' | 'barbers'>>({
+    const [formData, setFormData] = useState({
         name: '',
         address: '',
         lat: 0,
@@ -39,7 +33,6 @@ const BarbershopForm: React.FC = () => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [submitError, setSubmitError] = useState('');
 
-    // Состояния для автодополнения
     const [addressInput, setAddressInput] = useState('');
     const [addressSuggestions, setAddressSuggestions] = useState<DadataSuggestion[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -52,8 +45,7 @@ const BarbershopForm: React.FC = () => {
         const fetchBarbershop = async () => {
             try {
                 setLoading(true);
-                const response = await api.get(`/admin/barbershops/${id}`);
-                const data = response.data;
+                const data = await adminBarbershopApi.getById(parseInt(id));
 
                 if (isMounted) {
                     setFormData({
@@ -64,9 +56,15 @@ const BarbershopForm: React.FC = () => {
                     });
                     setAddressInput(data.address);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 if (isMounted) {
-                    setSubmitError('Не удалось загрузить данные барбершопа');
+                    const errorMessage = error.response?.data?.error ||
+                        'Не удалось загрузить данные барбершопа';
+                    setSubmitError(errorMessage);
+                    enqueueSnackbar(errorMessage, {
+                        variant: 'error',
+                        autoHideDuration: 3000
+                    });
                 }
             } finally {
                 if (isMounted) {
@@ -80,49 +78,51 @@ const BarbershopForm: React.FC = () => {
         return () => {
             isMounted = false;
         };
-    }, [id, currentUser]);
+    }, [id, currentUser, enqueueSnackbar]);
 
-    // Запрос к API для получения подсказок адресов
     const fetchAddressSuggestions = async (query: string) => {
-        if (!query) {
+        if (!query || query.length < 3) {
             setAddressSuggestions([]);
             return;
         }
 
         try {
             setLoadingSuggestions(true);
-            const response = await api.post('/suggest/address', { query });
-            setAddressSuggestions(response.data.suggestions || []);
+            const response = await adminBarbershopApi.suggestAddress(query);
+            setAddressSuggestions(response.suggestions || []);
         } catch (error) {
+            enqueueSnackbar('Ошибка при получении подсказок адреса', {
+                variant: 'error',
+                autoHideDuration: 3000
+            });
         } finally {
             setLoadingSuggestions(false);
         }
     };
 
-    // Обработчик изменения поля адреса
     const handleAddressInputChange = (
         _: React.SyntheticEvent,
         newValue: string
     ) => {
         setAddressInput(newValue);
-        fetchAddressSuggestions(newValue);
+        if (newValue.length >= 3) {
+            fetchAddressSuggestions(newValue);
+        }
     };
 
-    // Исправленный обработчик выбора адреса
     const handleAddressChange = (
         _: React.SyntheticEvent,
         value: string | DadataSuggestion | null
     ) => {
         if (typeof value === 'string') {
-            // Пользователь ввел произвольный текст
             setAddressInput(value);
             setFormData(prev => ({
                 ...prev,
                 address: value,
-                // Координаты не меняем - пользователь должен выбрать из подсказок
+                lat: 0,
+                lon: 0,
             }));
-        } else if (value && 'data' in value) {
-            // Выбрана подсказка из DaData
+        } else if (value) {
             setAddressInput(value.value);
             setFormData(prev => ({
                 ...prev,
@@ -131,7 +131,6 @@ const BarbershopForm: React.FC = () => {
                 lon: parseFloat(value.data.geo_lon) || 0,
             }));
         } else {
-            // Сброс значения
             setAddressInput('');
             setFormData(prev => ({
                 ...prev,
@@ -141,14 +140,7 @@ const BarbershopForm: React.FC = () => {
             }));
         }
 
-        // Сбрасываем ошибки для адреса и координат
-        setErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors.address;
-            delete newErrors.lat;
-            delete newErrors.lon;
-            return newErrors;
-        });
+        setErrors(prev => ({ ...prev, address: '', lat: '', lon: '' }));
     };
 
     const validate = (): boolean => {
@@ -180,17 +172,11 @@ const BarbershopForm: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'lat' || name === 'lon'
-                ? parseFloat(value) || 0
-                : value
+            [name]: name === 'lat' || name === 'lon' ? parseFloat(value) || 0 : value
         }));
-
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
-        }
+        setErrors(prev => ({ ...prev, [name]: '' }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -199,14 +185,35 @@ const BarbershopForm: React.FC = () => {
 
         try {
             setLoading(true);
+            const { name, address, lat, lon } = formData;
+            const submitData = { name, address, lat, lon };
+
+            let barbershopId: number;
             if (id) {
-                await api.put(`/admin/barbershops/${id}`, formData);
+                const updated = await adminBarbershopApi.update(parseInt(id), submitData);
+                barbershopId = updated.id;
+                enqueueSnackbar('Барбершоп успешно обновлен', {
+                    variant: 'success',
+                    autoHideDuration: 3000
+                });
             } else {
-                await api.post('/admin/barbershops', formData);
+                const created = await adminBarbershopApi.create(submitData);
+                barbershopId = created.id;
+                enqueueSnackbar('Барбершоп успешно создан', {
+                    variant: 'success',
+                    autoHideDuration: 3000
+                });
             }
-            navigate('/admin/barbershops');
+
+            navigate(`/admin/barbershops?highlight=${barbershopId}`);
         } catch (error: any) {
-            setSubmitError(error.response?.data?.error || 'Ошибка сохранения');
+            const errorMessage = error.response?.data?.error ||
+                'Ошибка сохранения барбершопа';
+            setSubmitError(errorMessage);
+            enqueueSnackbar(errorMessage, {
+                variant: 'error',
+                autoHideDuration: 3000
+            });
         } finally {
             setLoading(false);
         }
@@ -221,13 +228,20 @@ const BarbershopForm: React.FC = () => {
     }
 
     return (
-        <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 800, mt: 4 }}>
-            <Typography variant="h5" gutterBottom>
+        <Box component="form" onSubmit={handleSubmit} sx={{
+            maxWidth: 800,
+            mt: 4,
+            p: 4,
+            backgroundColor: 'white',
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+        }}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 700, color: '#2d3748' }}>
                 {id ? 'Редактировать барбершоп' : 'Добавить новый барбершоп'}
             </Typography>
 
             {submitError && (
-                <Alert severity="error" sx={{ mb: 3 }}>
+                <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSubmitError('')}>
                     {submitError}
                 </Alert>
             )}
@@ -242,8 +256,11 @@ const BarbershopForm: React.FC = () => {
                         value={formData.name}
                         onChange={handleChange}
                         error={!!errors.name}
-                        helperText={errors.name}
+                        helperText={errors.name || "Полное название барбершопа"}
                         required
+                        InputProps={{
+                            sx: { borderRadius: 2 }
+                        }}
                     />
                 </Grid>
 
@@ -264,10 +281,15 @@ const BarbershopForm: React.FC = () => {
                                 label="Адрес"
                                 margin="normal"
                                 error={!!errors.address}
-                                helperText={errors.address || "Начните вводить адрес для получения подсказок"}
+                                helperText={errors.address || "Начните вводить адрес для подсказок"}
                                 required
                                 InputProps={{
                                     ...params.InputProps,
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <LocationIcon color="action" />
+                                        </InputAdornment>
+                                    ),
                                     endAdornment: (
                                         <>
                                             {loadingSuggestions ? (
@@ -276,11 +298,12 @@ const BarbershopForm: React.FC = () => {
                                             {params.InputProps.endAdornment}
                                         </>
                                     ),
+                                    sx: { borderRadius: 2 }
                                 }}
                             />
                         )}
                         renderOption={(props, option) => (
-                            <li {...props}>
+                            <li {...props} key={option.value}>
                                 {option.value}
                             </li>
                         )}
@@ -303,10 +326,14 @@ const BarbershopForm: React.FC = () => {
                             readOnly: true
                         }}
                         required
+                        InputProps={{
+                            endAdornment: <InputAdornment position="end">°</InputAdornment>,
+                            sx: { borderRadius: 2 }
+                        }}
                     />
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }} >
                     <TextField
                         fullWidth
                         margin="normal"
@@ -322,6 +349,10 @@ const BarbershopForm: React.FC = () => {
                             readOnly: true
                         }}
                         required
+                        InputProps={{
+                            endAdornment: <InputAdornment position="end">°</InputAdornment>,
+                            sx: { borderRadius: 2 }
+                        }}
                     />
                 </Grid>
             </Grid>
@@ -332,8 +363,18 @@ const BarbershopForm: React.FC = () => {
                     variant="contained"
                     color="primary"
                     disabled={loading}
+                    sx={{
+                        bgcolor: '#4f46e5',
+                        '&:hover': { bgcolor: '#4338ca' },
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)',
+                        minWidth: 120
+                    }}
                 >
-                    {loading ? <CircularProgress size={24} /> : 'Сохранить'}
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Сохранить'}
                 </Button>
 
                 <Button
@@ -341,6 +382,15 @@ const BarbershopForm: React.FC = () => {
                     to="/admin/barbershops"
                     variant="outlined"
                     disabled={loading}
+                    sx={{
+                        borderColor: '#cbd5e0',
+                        color: '#4a5568',
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 500,
+                        minWidth: 120
+                    }}
                 >
                     Отмена
                 </Button>

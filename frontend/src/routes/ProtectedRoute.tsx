@@ -5,7 +5,7 @@ import { CircularProgress, Box } from '@mui/material';
 import { Role } from '../types';
 
 interface ProtectedRouteProps {
-    allowedRoles?: Role[];
+    allowedRoles: Role[];
 }
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {

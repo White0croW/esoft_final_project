@@ -123,11 +123,17 @@ export const getAllBarbershops = async (req: Request, res: Response) => {
     try {
         let where: any = {};
         if (search) {
+            const searchStr = search as string;
+            const searchNum = Number(searchStr);
+            const isNumeric = !isNaN(searchNum);
             where = {
                 OR: [
                     { name: { contains: search as string, mode: 'insensitive' } },
                     { address: { contains: search as string, mode: 'insensitive' } },
-                ],
+                    ...(isNumeric ? [
+                        { id: searchNum },
+                    ] : []),
+                ].filter(Boolean)
             };
         }
 

@@ -39,9 +39,8 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
             <Routes>
                 <Route element={<Layout />}>
-                    <Route index element={<Home />} />
-
                     {/* Публичные маршруты */}
+                    <Route index element={<Home />} />
                     <Route element={<PublicRoute />}>
                         <Route path="signin" element={
                             <Suspense fallback={<LoadingSpinner />}>
@@ -53,26 +52,26 @@ export default function App() {
                                 <SignUp />
                             </Suspense>
                         } />
+
+                        <Route path="barbershops" element={
+                            <Suspense fallback={<LoadingSpinner />}>
+                                <BarbershopsList />
+                            </Suspense>
+                        } />
+                        <Route path="barbershops/:id" element={
+                            <Suspense fallback={<LoadingSpinner />}>
+                                <BarbershopDetail />
+                            </Suspense>
+                        } />
+                        <Route path="barbers/:id" element={
+                            <Suspense fallback={<LoadingSpinner />}>
+                                <BarberDetail />
+                            </Suspense>
+                        } />
                     </Route>
 
-                    <Route path="barbershops" element={
-                        <Suspense fallback={<LoadingSpinner />}>
-                            <BarbershopsList />
-                        </Suspense>
-                    } />
-                    <Route path="barbershops/:id" element={
-                        <Suspense fallback={<LoadingSpinner />}>
-                            <BarbershopDetail />
-                        </Suspense>
-                    } />
-                    <Route path="barbers/:id" element={
-                        <Suspense fallback={<LoadingSpinner />}>
-                            <BarberDetail />
-                        </Suspense>
-                    } />
-
                     {/* Приватные маршруты */}
-                    <Route element={<ProtectedRoute />}>
+                    <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN, Role.USER]} />}>
                         <Route path="profile" element={
                             <Suspense fallback={<LoadingSpinner />}>
                                 <Profile />

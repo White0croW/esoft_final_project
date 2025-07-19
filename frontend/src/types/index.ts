@@ -138,3 +138,13 @@ export interface RecentAction {
     userAvatar?: string;
     details?: any; // Для дополнительной информации
 }
+
+// Тип для подсказок DaData
+export interface DadataSuggestion {
+    value: string;
+    data: {
+        geo_lat: string;
+        geo_lon: string;
+        [key: string]: any;
+    };
+}
