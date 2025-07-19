@@ -43,6 +43,8 @@ export const getAllBarbers = async (req: Request, res: Response) => {
         if (search) {
             where = {
                 OR: [
+                    { id: { contains: search as string, mode: 'insensitive' } },
+                    { rating: { contains: search as string, mode: 'insensitive' } },
                     { name: { contains: search as string, mode: 'insensitive' } },
                     { specialization: { contains: search as string, mode: 'insensitive' } },
                 ],

@@ -75,12 +75,17 @@ const ServiceForm: React.FC = () => {
 
         try {
             setLoading(true);
+            let serviceId: number;
             if (id) {
-                await adminServiceApi.update(parseInt(id), formData);
+                const updatedService = await adminServiceApi.update(parseInt(id), formData);
+                serviceId = updatedService.id;
             } else {
-                await adminServiceApi.create(formData);
+                const newService = await adminServiceApi.create(formData);
+                serviceId = newService.id;
             }
-            navigate('/admin/services');
+
+            // Перенаправляем с параметром highlight
+            navigate(`/admin/services?highlight=${serviceId}`);
         } catch (error: any) {
             setSubmitError(error.response?.data?.error || 'Ошибка сохранения услуги');
         } finally {
@@ -101,8 +106,8 @@ const ServiceForm: React.FC = () => {
     if (loading) return <LoadingSpinner />;
 
     return (
-        <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 600, mt: 4 }}>
-            <Typography variant="h5" gutterBottom>
+        <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 600, mt: 4, p: 3, backgroundColor: 'white', borderRadius: 2, boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+            <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
                 {id ? 'Редактировать услугу' : 'Добавить новую услугу'}
             </Typography>
 
@@ -118,6 +123,7 @@ const ServiceForm: React.FC = () => {
                 error={!!errors.name}
                 helperText={errors.name}
                 required
+                sx={{ mb: 2 }}
             />
 
             <TextField
@@ -129,6 +135,7 @@ const ServiceForm: React.FC = () => {
                 onChange={handleChange}
                 multiline
                 rows={4}
+                sx={{ mb: 2 }}
             />
 
             <TextField
@@ -143,6 +150,7 @@ const ServiceForm: React.FC = () => {
                 helperText={errors.duration}
                 required
                 inputProps={{ min: 1 }}
+                sx={{ mb: 2 }}
             />
 
             <TextField
@@ -157,6 +165,7 @@ const ServiceForm: React.FC = () => {
                 helperText={errors.price}
                 required
                 inputProps={{ min: 0, step: 50 }}
+                sx={{ mb: 3 }}
             />
 
             <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
@@ -165,10 +174,31 @@ const ServiceForm: React.FC = () => {
                     variant="contained"
                     color="primary"
                     disabled={loading}
+                    sx={{
+                        bgcolor: '#4f46e5',
+                        '&:hover': { bgcolor: '#4338ca' },
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)'
+                    }}
                 >
-                    {loading ? <CircularProgress size={24} /> : 'Сохранить'}
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Сохранить'}
                 </Button>
-                <Button component={Link} to="/admin/services" variant="outlined">
+                <Button
+                    component={Link}
+                    to="/admin/services"
+                    variant="outlined"
+                    sx={{
+                        borderColor: '#cbd5e0',
+                        color: '#4a5568',
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontWeight: 500
+                    }}
+                >
                     Отмена
                 </Button>
             </Box>

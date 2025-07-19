@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { equal } from "assert";
 
 const prisma = new PrismaClient();
 
@@ -19,11 +20,20 @@ export const getAllServices = async (req: Request, res: Response) => {
     try {
         let where: any = {};
         if (search) {
+            const searchStr = search as string;
+            const searchNum = Number(searchStr);
+            const isNumeric = !isNaN(searchNum);
+
             where = {
                 OR: [
-                    { name: { contains: search as string, mode: 'insensitive' } },
-                    { description: { contains: search as string, mode: 'insensitive' } },
-                ],
+                    { name: { contains: searchStr, mode: 'insensitive' } },
+                    { description: { contains: searchStr, mode: 'insensitive' } },
+                    ...(isNumeric ? [
+                        { id: searchNum },
+                        { duration: searchNum },
+                        { price: searchNum }
+                    ] : []),
+                ].filter(Boolean)
             };
         }
 
@@ -53,6 +63,7 @@ export const getAllServices = async (req: Request, res: Response) => {
             currentPage: pageNum,
         });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Ошибка при получении услуг" });
     }
 };
