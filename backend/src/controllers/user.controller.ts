@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { validationResult } from "express-validator";
 
@@ -98,21 +98,76 @@ export async function changePassword(req: Request, res: Response) {
     }
 }
 
-// ADMIN: Получение всех пользователей
 export const getAllUsers = async (req: Request, res: Response) => {
+    const currentUser = (req as any).user;
+    if (currentUser.role !== Role.ADMIN) {
+        return res.status(403).json({ message: "Доступ запрещен" });
+    }
+
+    const {
+        page = 1,
+        limit = 10,
+        search,
+        sortBy = 'id',
+        sortOrder = 'asc'
+    } = req.query;
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
+
     try {
-        const users = await db.user.findMany({
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                role: true,
-                createdAt: true
-            }
+        let where: any = {};
+
+        // Поиск по всем полям
+        if (search) {
+            const searchStr = search as string;
+            const searchNum = Number(searchStr);
+            const isNumeric = !isNaN(searchNum);
+
+            where.OR = [
+                { name: { contains: searchStr, mode: 'insensitive' } },
+                { email: { contains: searchStr, mode: 'insensitive' } },
+                ...(isNumeric ? [{ id: searchNum }] : [])
+            ];
+        }
+
+        // Определение сортировки
+        let orderBy: any = {};
+        const validSortFields = ['id', 'name', 'email', 'role', 'createdAt'];
+
+        if (validSortFields.includes(sortBy as string)) {
+            orderBy[sortBy as string] = sortOrder === 'desc' ? 'desc' : 'asc';
+        } else {
+            orderBy = { id: 'asc' };
+        }
+
+        const [users, total] = await db.$transaction([
+            db.user.findMany({
+                where,
+                skip,
+                take: limitNum,
+                orderBy,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    role: true,
+                    createdAt: true
+                }
+            }),
+            db.user.count({ where })
+        ]);
+
+        res.json({
+            data: users,
+            total,
+            totalPages: Math.ceil(total / limitNum),
+            currentPage: pageNum,
         });
-        res.json(users);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Ошибка сервера" });
     }
 };

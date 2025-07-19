@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     Button,
     Table,
@@ -13,86 +13,197 @@ import {
     Pagination,
     Box,
     CircularProgress,
-    Alert,
-    TextField
+    TextField,
+    Tooltip,
+    IconButton,
+    Typography,
+    Alert
 } from '@mui/material';
+import {
+    Add as AddIcon,
+    Search as SearchIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Refresh as RefreshIcon,
+    Clear as ClearIcon,
+    Check as CheckIcon
+} from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
+import { keyframes } from '@mui/system';
 import { User, Role } from '../../../types';
-import api from '../../../api/base';
+import { adminUserApi } from '../../../api/admin/users';
 import { useAuth } from '../../../contexts/AuthContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { useDebounce } from 'use-debounce';
 
-type SortField = 'id' | 'name' | 'email' | 'role';
+// Анимации
+const highlightAnimation = keyframes`
+  0% { background-color: rgba(110, 231, 183, 0.8); }
+  70% { background-color: rgba(110, 231, 183, 0.3); }
+  100% { background-color: transparent; }
+`;
+
+const fadeOutAnimation = keyframes`
+  0% { opacity: 1; transform: scaleY(1); height: auto; }
+  70% { background-color: rgba(254, 226, 226, 0.7); }
+  100% { opacity: 0; transform: scaleY(0); height: 0; padding: 0; margin: 0; }
+`;
+
+type SortField = 'id' | 'name' | 'email' | 'role' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
 const UserList: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [initialLoading, setInitialLoading] = useState(true);
     const { user: currentUser } = useAuth();
+    const { enqueueSnackbar } = useSnackbar();
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const [sortField, setSortField] = useState<SortField>('id');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [totalItems, setTotalItems] = useState(0);
     const itemsPerPage = 10;
     const [searchInput, setSearchInput] = useState('');
     const [debouncedSearch] = useDebounce(searchInput, 500);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [highlightedIds, setHighlightedIds] = useState<number[]>([]);
+    const [removingIds, setRemovingIds] = useState<number[]>([]);
+    const [error, setError] = useState('');
 
-    // Реф для сохранения фокуса на поле поиска
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const isMountedRef = useRef(true);
 
+    // Обработка подсвеченных элементов из URL
     useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const highlightedId = params.get('highlight');
+
+        if (highlightedId) {
+            const id = parseInt(highlightedId);
+            if (!isNaN(id)) {
+                setHighlightedIds(prev => [...prev, id]);
+                params.delete('highlight');
+                navigate({ search: params.toString() }, { replace: true });
+
+                setTimeout(() => {
+                    const element = document.getElementById(`user-${id}`);
+                    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500);
+
+                setTimeout(() => {
+                    setHighlightedIds(prev => prev.filter(item => item !== id));
+                }, 5000);
+            }
+        }
+    }, [location.search, navigate]);
+
+    const fetchUsers = async () => {
         if (!currentUser || currentUser.role !== Role.ADMIN) return;
 
-        const fetchUsers = async () => {
-            try {
-                setLoading(true);
-                const response = await api.get('/admin/users');
+        try {
+            setLoading(true);
+            const response = await adminUserApi.getAll({
+                page,
+                limit: itemsPerPage,
+                search: debouncedSearch,
+                sortBy: sortField,
+                sortOrder: sortDirection
+            });
+
+            if (isMountedRef.current) {
                 setUsers(response.data);
-                setTotalPages(Math.ceil(response.data.length / itemsPerPage));
-
-                // Возвращаем фокус на поле поиска после загрузки
-                if (searchInputRef.current) {
-                    searchInputRef.current.focus();
-                }
-            } catch (error) {
-                setError('Не удалось загрузить список пользователей');
-            } finally {
-                setLoading(false);
+                setTotalPages(response.totalPages);
+                setTotalItems(response.total);
+                setError('');
             }
-        };
+        } catch (error: any) {
+            if (isMountedRef.current) {
+                const errorMessage = error.response?.data?.message ||
+                    'Не удалось загрузить список пользователей';
+                setError(errorMessage);
+                enqueueSnackbar(errorMessage, {
+                    variant: 'error',
+                    autoHideDuration: 3000
+                });
+            }
+        } finally {
+            if (isMountedRef.current) {
+                setLoading(false);
+                if (initialLoading) setInitialLoading(false);
+            }
+        }
+    };
 
+    useEffect(() => {
+        isMountedRef.current = true;
         fetchUsers();
-    }, [currentUser]);
+
+        return () => { isMountedRef.current = false; };
+    }, [page, debouncedSearch, sortField, sortDirection]);
 
     const handleSort = (field: SortField) => {
         const isAsc = sortField === field && sortDirection === 'asc';
-        setSortDirection(isAsc ? 'desc' : 'asc');
+        const newDirection = isAsc ? 'desc' : 'asc';
+        setSortDirection(newDirection);
         setSortField(field);
+        setPage(1);
     };
 
     const handleDelete = async (id: number) => {
         if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
             try {
-                await api.delete(`/admin/users/${id}`);
-                setUsers(users.filter(user => user.id !== id));
-                setTotalPages(Math.ceil((users.length - 1) / itemsPerPage));
-                if (page > 1 && (users.length - 1) <= (page - 1) * itemsPerPage) {
-                    setPage(page - 1);
-                }
+                setDeletingId(id);
+                setRemovingIds(prev => [...prev, id]);
 
-                // Возвращаем фокус на поле поиска после удаления
-                if (searchInputRef.current) {
-                    searchInputRef.current.focus();
-                }
-            } catch (error) {
-                setError('Не удалось удалить пользователя');
+                await adminUserApi.delete(id);
+
+                enqueueSnackbar('Пользователь успешно удалён', {
+                    variant: 'success',
+                    autoHideDuration: 2000
+                });
+
+                setTimeout(async () => {
+                    await fetchUsers();
+                    setRemovingIds(prev => prev.filter(item => item !== id));
+
+                    if (users.length === 1 && page > 1) {
+                        setPage(prevPage => prevPage - 1);
+                    }
+                }, 700);
+
+                searchInputRef.current?.focus();
+            } catch (error: any) {
+                setRemovingIds(prev => prev.filter(item => item !== id));
+                const errorMessage = error.response?.data?.message ||
+                    'Не удалось удалить пользователя';
+                enqueueSnackbar(errorMessage, {
+                    variant: 'error',
+                    autoHideDuration: 3000
+                });
+            } finally {
+                setDeletingId(null);
             }
         }
     };
 
-    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    const handleRefresh = async () => {
+        await fetchUsers();
+        enqueueSnackbar('Данные обновлены', {
+            variant: 'info',
+            autoHideDuration: 1500
+        });
+    };
+
+    const handleClearSearch = () => {
+        setSearchInput('');
+        searchInputRef.current?.focus();
+    };
+
+    const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
         setPage(value);
     };
 
@@ -101,79 +212,164 @@ const UserList: React.FC = () => {
         setPage(1);
     };
 
-    const filterUsers = (users: User[], search: string) => {
-        if (!search) return users;
-
-        const lowerSearch = search.toLowerCase();
-        return users.filter(user =>
-            user.id.toString().includes(lowerSearch) ||
-            (user.name && user.name.toLowerCase().includes(lowerSearch)) ||
-            user.email.toLowerCase().includes(lowerSearch) ||
-            (user.role === Role.ADMIN ? 'админ' : 'пользователь').includes(lowerSearch)
-        );
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
-    const filteredUsers = filterUsers(users, debouncedSearch);
-    const sortedUsers = [...filteredUsers].sort((a, b) => {
-        const compare = (a: any, b: any) => {
-            if (a < b) return -1;
-            if (a > b) return 1;
-            return 0;
-        };
-
-        const aValue = a[sortField];
-        const bValue = b[sortField];
-
-        return sortDirection === 'asc'
-            ? compare(aValue, bValue)
-            : compare(bValue, aValue);
-    });
-
-    const paginatedUsers = sortedUsers.slice(
-        (page - 1) * itemsPerPage,
-        page * itemsPerPage
-    );
-
-    const newTotalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-
-    if (loading) return <LoadingSpinner />;
+    if (initialLoading) return <LoadingSpinner />;
     if (!currentUser || currentUser.role !== Role.ADMIN) return null;
 
     return (
-        <div>
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-                    {error}
-                </Alert>
-            )}
+        <Box sx={{ p: 3, backgroundColor: '#f9fafb', minHeight: '100vh' }}>
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3,
+                    backgroundColor: 'white',
+                    borderRadius: 2,
+                    p: 3,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                }}>
+                    <Box>
+                        <Typography variant="h4" component="h1" sx={{
+                            fontWeight: 700,
+                            color: '#2d3748',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                        }}>
+                            Управление пользователями
+                            <Tooltip title="Обновить данные">
+                                <IconButton
+                                    color="primary"
+                                    onClick={handleRefresh}
+                                    sx={{ ml: 1 }}
+                                >
+                                    <RefreshIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: '#718096', mt: 1 }}>
+                            Всего пользователей: {totalItems}
+                        </Typography>
+                    </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Button
-                    component={Link}
-                    to="/admin/users/new"
-                    variant="contained"
-                >
-                    Создать пользователя
-                </Button>
+                    <Button
+                        component={Link}
+                        to="/admin/users/new"
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        sx={{
+                            bgcolor: '#4f46e5',
+                            '&:hover': { bgcolor: '#4338ca' },
+                            height: 45,
+                            px: 3,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 6px rgba(79, 70, 229, 0.3)'
+                        }}
+                    >
+                        Добавить пользователя
+                    </Button>
+                </Box>
 
-                <TextField
-                    inputRef={searchInputRef}
-                    label="Поиск по всем полям"
-                    variant="outlined"
-                    size="small"
-                    value={searchInput}
-                    onChange={handleSearchChange}
-                    placeholder="Введите для поиска..."
-                    sx={{ width: 300 }}
-                    autoFocus
-                />
+                {error && (
+                    <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                    backgroundColor: 'white',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                }}>
+                    <TextField
+                        inputRef={searchInputRef}
+                        label="Поиск пользователей"
+                        variant="outlined"
+                        size="small"
+                        value={searchInput}
+                        onChange={handleSearchChange}
+                        placeholder="Введите имя, email или ID..."
+                        sx={{
+                            width: 350,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                paddingRight: 1
+                            }
+                        }}
+                        InputProps={{
+                            startAdornment: (
+                                <SearchIcon sx={{ color: '#a0aec0', mr: 1 }} />
+                            ),
+                            endAdornment: searchInput && (
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClearSearch}
+                                    sx={{ color: '#a0aec0' }}
+                                >
+                                    <ClearIcon fontSize="small" />
+                                </IconButton>
+                            )
+                        }}
+                    />
+
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: '#718096', alignSelf: 'center' }}>
+                            Страница {page} из {totalPages}
+                        </Typography>
+                    </Box>
+                </Box>
             </Box>
 
-            <TableContainer component={Paper}>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                    mb: 3,
+                    position: 'relative',
+                    minHeight: 400
+                }}
+            >
+                {loading && !initialLoading && (
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        zIndex: 10
+                    }}>
+                        <CircularProgress size={60} thickness={4} sx={{ color: '#4f46e5' }} />
+                    </Box>
+                )}
+
                 <Table>
-                    <TableHead>
+                    <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                         <TableRow>
-                            <TableCell sortDirection={sortField === 'id' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'id'}
                                     direction={sortField === 'id' ? sortDirection : 'asc'}
@@ -182,7 +378,7 @@ const UserList: React.FC = () => {
                                     ID
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'name' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'name'}
                                     direction={sortField === 'name' ? sortDirection : 'asc'}
@@ -191,7 +387,7 @@ const UserList: React.FC = () => {
                                     Имя
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'email' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'email'}
                                     direction={sortField === 'email' ? sortDirection : 'asc'}
@@ -200,7 +396,7 @@ const UserList: React.FC = () => {
                                     Email
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell sortDirection={sortField === 'role' ? sortDirection : false}>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
                                 <TableSortLabel
                                     active={sortField === 'role'}
                                     direction={sortField === 'role' ? sortDirection : 'asc'}
@@ -209,41 +405,125 @@ const UserList: React.FC = () => {
                                     Роль
                                 </TableSortLabel>
                             </TableCell>
-                            <TableCell>Действия</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748' }}>
+                                <TableSortLabel
+                                    active={sortField === 'createdAt'}
+                                    direction={sortField === 'createdAt' ? sortDirection : 'asc'}
+                                    onClick={() => handleSort('createdAt')}
+                                >
+                                    Дата создания
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#2d3748', width: 150 }}>Действия</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {paginatedUsers.length > 0 ? (
-                            paginatedUsers.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell>{user.id}</TableCell>
-                                    <TableCell>{user.name}</TableCell>
+                        {users.length > 0 ? users.map((user) => {
+                            const isHighlighted = highlightedIds.includes(user.id);
+                            const isRemoving = removingIds.includes(user.id);
+
+                            return (
+                                <TableRow
+                                    key={user.id}
+                                    id={`user-${user.id}`}
+                                    sx={{
+                                        '&:nth-of-type(even)': { bgcolor: '#f8fafc' },
+                                        '&:hover': { bgcolor: '#f1f5f9' },
+                                        ...(isHighlighted && {
+                                            animation: `${highlightAnimation} 2s ease`,
+                                            boxShadow: '0 0 8px rgba(110, 231, 183, 0.5)'
+                                        }),
+                                        ...(isRemoving && {
+                                            animation: `${fadeOutAnimation} 0.7s forwards`,
+                                            transformOrigin: 'top'
+                                        })
+                                    }}
+                                >
+                                    <TableCell sx={{ fontWeight: 500 }}>
+                                        {user.id}
+                                        {isHighlighted && (
+                                            <CheckIcon sx={{
+                                                color: 'green',
+                                                ml: 1,
+                                                verticalAlign: 'middle',
+                                                fontSize: '1rem'
+                                            }} />
+                                        )}
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
-                                    <TableCell>{user.role === Role.ADMIN ? 'Админ' : 'Пользователь'}</TableCell>
+                                    <TableCell>{user.role === Role.ADMIN ? 'Администратор' : 'Пользователь'}</TableCell>
+                                    <TableCell>{formatDate(user.createdAt)}</TableCell>
                                     <TableCell>
-                                        <Button
-                                            component={Link}
-                                            to={`/admin/users/${user.id}`}
-                                            size="small"
-                                            sx={{ mr: 1 }}
-                                        >
-                                            Редактировать
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleDelete(user.id)}
-                                            color="error"
-                                            size="small"
-                                            disabled={user.id === currentUser?.id}
-                                        >
-                                            Удалить
-                                        </Button>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Tooltip title="Редактировать" arrow>
+                                                <IconButton
+                                                    component={Link}
+                                                    to={`/admin/users/${user.id}`}
+                                                    size="small"
+                                                    color="primary"
+                                                    sx={{
+                                                        bgcolor: '#e0f2fe',
+                                                        '&:hover': { bgcolor: '#bae6fd' }
+                                                    }}
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Удалить" arrow>
+                                                <IconButton
+                                                    onClick={() => handleDelete(user.id)}
+                                                    size="small"
+                                                    color="error"
+                                                    disabled={deletingId === user.id || (currentUser && user.id === currentUser.id)}
+                                                    sx={{
+                                                        bgcolor: '#fee2e2',
+                                                        '&:hover': { bgcolor: '#fecaca' },
+                                                        '&:disabled': { bgcolor: '#f3f4f6' }
+                                                    }}
+                                                >
+                                                    {deletingId === user.id ? (
+                                                        <CircularProgress size={20} color="error" />
+                                                    ) : (
+                                                        <DeleteIcon fontSize="small" />
+                                                    )}
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        ) : (
+                            );
+                        }) : (
                             <TableRow>
-                                <TableCell colSpan={5} align="center">
-                                    {debouncedSearch ? "По вашему запросу ничего не найдено" : "Пользователи не найдены"}
+                                <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                                    <Box sx={{ textAlign: 'center', color: '#718096' }}>
+                                        <SearchIcon sx={{ fontSize: 60, mb: 2, color: '#cbd5e0' }} />
+                                        <Typography variant="h6" sx={{ mb: 1 }}>
+                                            {debouncedSearch ? "Пользователи не найдены" : "Список пользователей пуст"}
+                                        </Typography>
+                                        <Typography variant="body1" sx={{ mb: 3 }}>
+                                            {debouncedSearch
+                                                ? "Попробуйте изменить условия поиска"
+                                                : "Добавьте первого пользователя"}
+                                        </Typography>
+                                        {!debouncedSearch && (
+                                            <Button
+                                                component={Link}
+                                                to="/admin/users/new"
+                                                variant="contained"
+                                                startIcon={<AddIcon />}
+                                                sx={{
+                                                    bgcolor: '#4f46e5',
+                                                    '&:hover': { bgcolor: '#4338ca' },
+                                                    borderRadius: 2,
+                                                    textTransform: 'none',
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                Добавить пользователя
+                                            </Button>
+                                        )}
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         )}
@@ -251,17 +531,40 @@ const UserList: React.FC = () => {
                 </Table>
             </TableContainer>
 
-            {newTotalPages > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            {totalPages > 1 && (
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mt: 3,
+                    backgroundColor: 'white',
+                    borderRadius: 2,
+                    p: 2,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                }}>
                     <Pagination
-                        count={newTotalPages}
+                        count={totalPages}
                         page={page}
                         onChange={handlePageChange}
                         color="primary"
+                        shape="rounded"
+                        size="large"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontWeight: 600,
+                                borderRadius: 1.5
+                            },
+                            '& .Mui-selected': {
+                                bgcolor: '#4f46e5',
+                                color: 'white',
+                                '&:hover': {
+                                    bgcolor: '#4338ca'
+                                }
+                            }
+                        }}
                     />
                 </Box>
             )}
-        </div>
+        </Box>
     );
 };
 
