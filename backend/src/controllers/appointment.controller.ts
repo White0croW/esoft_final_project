@@ -357,7 +357,11 @@ export const getAllAppointments = async (req: Request, res: Response) => {
 
         // Поиск по связанным данным
         if (search) {
+            const searchStr = search as string;
+            const isInteger = /^-?\d+$/.test(searchStr);
+            const searchNum = isInteger ? parseInt(searchStr) : NaN;
             where.OR = [
+                ...(isInteger ? [{ id: searchNum }] : []),
                 { user: { name: { contains: search as string, mode: 'insensitive' } } },
                 { service: { name: { contains: search as string, mode: 'insensitive' } } },
                 { barber: { name: { contains: search as string, mode: 'insensitive' } } },

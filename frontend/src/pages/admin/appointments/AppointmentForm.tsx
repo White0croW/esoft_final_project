@@ -28,7 +28,7 @@ import { adminServiceApi } from '../../../api/admin/services';
 import { adminUserApi } from '../../../api/admin/users';
 import { useAuth } from '../../../contexts/AuthContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { fetchAvailableSlots } from '../../../api/barber'; // Импорт функции получения слотов
+import { fetchAvailableSlots } from '../../../api/barber';
 
 // Типы для формы
 type AppointmentFormData = {
@@ -95,12 +95,12 @@ const AppointmentForm: React.FC = () => {
                 const [servicesRes, barbersRes, usersRes] = await Promise.all([
                     adminServiceApi.getAll(),
                     adminBarberApi.getAll(),
-                    adminUserApi.getAll()
+                    adminUserApi.getAll({})
                 ]);
 
                 setServices(servicesRes.data);
                 setBarbers(barbersRes.data);
-                setUsers(usersRes);
+                setUsers(usersRes.data);
 
                 // Загрузка данных записи, если редактирование
                 if (id) {
@@ -237,11 +237,13 @@ const AppointmentForm: React.FC = () => {
 
             if (id) {
                 await adminAppointmentApi.update(parseInt(id), data);
+                // Перенаправляем с подсветкой измененной записи
+                navigate(`/admin/appointments?highlight=${id}`);
             } else {
-                await adminAppointmentApi.create(data);
+                const createdAppointment = await adminAppointmentApi.create(data);
+                // Перенаправляем с подсветкой новой записи
+                navigate(`/admin/appointments?highlight=${createdAppointment.id}`);
             }
-
-            navigate('/admin/appointments');
         } catch (error) {
             setSubmitError('Ошибка сохранения записи');
         } finally {
@@ -375,7 +377,7 @@ const AppointmentForm: React.FC = () => {
                     </Grid>
 
                     {/* Выбор времени через слоты */}
-                    <Grid size={{ xs: 12}}>
+                    <Grid size={{ xs: 12 }}>
                         <Card sx={{ borderRadius: 2, boxShadow: 2, mt: 1 }}>
                             <CardContent>
                                 <Typography variant="h6" gutterBottom>

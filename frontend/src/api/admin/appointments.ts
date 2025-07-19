@@ -9,19 +9,16 @@ interface FetchAppointmentsParams {
     sortOrder?: 'asc' | 'desc';
     status?: string;
 }
+interface PaginatedResponse {
+    data: Appointment[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+}
 
 export const adminAppointmentApi = {
-    getAll: async ({
-        page = 1,
-        limit = 10,
-        search,
-        sortBy,
-        sortOrder,
-        status
-    }: FetchAppointmentsParams): Promise<{ data: Appointment[]; totalPages: number }> => {
-        const response = await api.get('/admin/appointments', {
-            params: { page, limit, search, sortBy, sortOrder, status }
-        });
+    getAll: async (params?: FetchAppointmentsParams): Promise<PaginatedResponse> => {
+        const response = await api.get('/admin/appointments', { params });
         return response.data;
     },
 
