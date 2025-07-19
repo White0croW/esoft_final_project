@@ -42,28 +42,9 @@ interface DadataSuggestion {
     data: { geo_lat: string; geo_lon: string };
 }
 
-// Хелпер для расчёта расстояния (в метрах) между двумя точками
-function calcDistance(
-    [lat1, lon1]: [number, number],
-    [lat2, lon2]: [number, number]
-) {
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    const R = 6371e3; // Метры
-    const φ1 = toRad(lat1);
-    const φ2 = toRad(lat2);
-    const Δφ = toRad(lat2 - lat1);
-    const Δλ = toRad(lon2 - lon1);
-    const a =
-        Math.sin(Δφ / 2) ** 2 +
-        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
-
 export default function Home() {
     const { token } = useAuth();
     const [shops, setShops] = useState<BarberShop[]>([]);
-    const [displayedShops, setDisplayedShops] = useState<BarberShop[]>([]);
     const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
     const [center, setCenter] = useState<[number, number]>([55.75, 37.62]); // Москва по умолчанию
     const [addrInput, setAddrInput] = useState("");
@@ -77,50 +58,23 @@ export default function Home() {
             try {
                 const portfolioData = await fetchPortfolio();
                 setPortfolio(portfolioData);
-                if (!token) {
-                    // Если пользователь не авторизован — загружаем популярные
-                    const shopsData = await fetchBarbershops({ popular: true });
-                    setShops(shopsData);
-                    setDisplayedShops(shopsData);
-                    setLoading(false);
-                    return;
-                }
-                // Получаем текущее местоположение пользователя
-                if (navigator.geolocation) {
+
+                // Всегда загружаем все барбершопы
+                const allShops = await fetchBarbershops();
+                setShops(allShops);
+
+                if (token && navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
-                        async (position) => {
+                        (position) => {
                             const { latitude, longitude } = position.coords;
                             setCenter([latitude, longitude]);
-                            try {
-                                const nearbyShops = await fetchBarbershops({
-                                    lat: latitude,
-                                    lon: longitude
-                                });
-                                setShops(nearbyShops);
-                                setDisplayedShops(nearbyShops);
-                            } catch (error) {
-                            }
                             setLoading(false);
                         },
-                        async () => {
-                            // Не удалось получить местоположение — загружаем популярные
-                            try {
-                                const popularShops = await fetchBarbershops({ popular: true });
-                                setShops(popularShops);
-                                setDisplayedShops(popularShops);
-                            } catch (error) {
-                            }
+                        () => {
                             setLoading(false);
                         }
                     );
                 } else {
-                    // Браузер не поддерживает геолокацию — загружаем популярные
-                    try {
-                        const popularShops = await fetchBarbershops({ popular: true });
-                        setShops(popularShops);
-                        setDisplayedShops(popularShops);
-                    } catch (error) {
-                    }
                     setLoading(false);
                 }
             } catch (error) {
@@ -129,15 +83,6 @@ export default function Home() {
         };
         fetchData();
     }, [token]);
-
-    // При изменении центра фильтруем барбершопы в радиусе 5 км
-    useEffect(() => {
-        const RADIUS_METERS = 5_000;
-        const filtered = shops.filter((shop) =>
-            calcDistance(center, [shop.lat, shop.lon]) <= RADIUS_METERS
-        );
-        setDisplayedShops(filtered);
-    }, [center, shops]);
 
     // Поиск адреса через Dadata
     const fetchDadata = async (q: string) => {
@@ -154,6 +99,7 @@ export default function Home() {
             const { suggestions } = await res.json();
             setAddrOptions(suggestions || []);
         } catch (err) {
+            console.error("Ошибка поиска адреса:", err);
         }
     };
 
@@ -168,17 +114,13 @@ export default function Home() {
             const { geo_lat, geo_lon } = value.data;
             const newCenter: [number, number] = [+geo_lat, +geo_lon];
             setCenter(newCenter);
-            fetchBarbershops({ lat: newCenter[0], lon: newCenter[1] })
-                .then(setDisplayedShops)
-                .catch(console.error);
         } else if (value === null) {
-            fetchBarbershops({ popular: true })
-                .then(setDisplayedShops)
-                .catch(console.error);
+            // Возвращаемся к центру по умолчанию при сбросе
+            setCenter([55.75, 37.62]);
         }
     };
 
-    // Используем MapContainer из react-leaflet
+    // Компонент для изменения вида карты
     const ChangeView = ({ center, zoom }: { center: [number, number], zoom: number }) => {
         const map = useMap();
         React.useEffect(() => {
@@ -281,7 +223,7 @@ export default function Home() {
             {loading ? (
                 <Grid container spacing={3} sx={{ mb: 6 }}>
                     {[...Array(3)].map((_, i) => (
-                        <Grid size={{ xs: 8, sm: 6, md: 4 }} key={i}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
                             <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 3 }} />
                         </Grid>
                     ))}
@@ -289,7 +231,7 @@ export default function Home() {
             ) : (
                 <Grid container spacing={3} sx={{ mb: 6 }}>
                     {portfolio.slice(0, 3).map((p) => (
-                        <Grid size={{ xs: 8, sm: 6, md: 4 }} key={p.id}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={p.id}>
                             <Card sx={{
                                 height: "100%",
                                 borderRadius: 3,
@@ -420,8 +362,8 @@ export default function Home() {
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href=" https://www.openstreetmap.org/copyright ">OpenStreetMap</a> contributors'
                         />
-                        {/* Маркеры барбершопов */}
-                        {displayedShops.map((s) => (
+                        {/* Маркеры всех барбершопов */}
+                        {shops.map((s) => (
                             <Marker
                                 key={s.id}
                                 position={[s.lat, s.lon]}

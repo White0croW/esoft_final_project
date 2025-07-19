@@ -90,17 +90,39 @@ export const getCities = async (req: Request, res: Response) => {
             select: { address: true },
         });
 
-        // Извлекаем города из адресов
-        const cities = barbershops
-            .map(shop => {
-                // Пытаемся извлечь город из адреса (первая часть до запятой)
-                const match = shop.address.match(/^([^,]+)/);
-                return match ? match[1].trim() : null;
-            })
-            .filter((city): city is string => !!city && city.length > 0)
-            .filter((city, index, self) => self.indexOf(city) === index) // Уникальные
-            .sort();
+        // Извлекаем все возможные города из адресов
+        const citySet = new Set<string>();
 
+        // Список типичных сокращений для городов
+        const cityTypes = ["г", "город", "с", "пос", "дер", "пгт", "ст", "аул"];
+        const cityPattern = `(?:${cityTypes.join("|")})?\\.?\\s*`;
+
+        barbershops.forEach(shop => {
+            const address = shop.address;
+
+            // Вариант 1: Ищем город по шаблону (тип + название)
+            const pattern = new RegExp(`${cityPattern}([\\w\\s-]+)`, "gi");
+            let match;
+
+            while ((match = pattern.exec(address)) !== null) {
+                const candidate = match[1].trim();
+                if (candidate.length > 3) { // Исключаем слишком короткие названия
+                    citySet.add(candidate);
+                }
+            }
+
+            // Вариант 2: Просто берем последнюю часть адреса (часто там город)
+            const parts = address.split(',').map(part => part.trim());
+            if (parts.length > 1) {
+                const lastPart = parts[parts.length - 1];
+                if (lastPart.length > 3) {
+                    citySet.add(lastPart);
+                }
+            }
+        });
+
+        // Преобразуем в массив и сортируем
+        const cities = Array.from(citySet).sort();
         res.json(cities);
     } catch (error) {
         res.status(500).json({ error: "Ошибка загрузки городов" });
@@ -284,5 +306,33 @@ export const deleteBarbershop = async (req: Request, res: Response) => {
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: "Ошибка при удалении барбершопа" });
+    }
+};
+
+// Добавьте этот метод в ваш barbershop.controller.ts
+export const reverseGeocode = async (req: Request, res: Response) => {
+    const { lat, lon } = req.query;
+
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+            { headers: { 'User-Agent': 'BarbershopApp/1.0' } }
+        );
+        const data = await response.json();
+
+        // Извлекаем город из ответа
+        const city = data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.county ||
+            data.address?.state;
+
+        if (city) {
+            return res.json({ city });
+        }
+
+        res.status(404).json({ error: "Город не найден" });
+    } catch (error) {
+        res.status(500).json({ error: "Ошибка геокодирования" });
     }
 };
