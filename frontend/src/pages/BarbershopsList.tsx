@@ -46,7 +46,6 @@ export default function BarbershopsList() {
                     setUserLocation([position.coords.latitude, position.coords.longitude]);
                 },
                 () => {
-                    console.error("Не удалось получить местоположение");
                     setUserLocation(null);
                 }
             );

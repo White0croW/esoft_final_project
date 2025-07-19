@@ -65,7 +65,6 @@ const BarbershopForm: React.FC = () => {
                     setAddressInput(data.address);
                 }
             } catch (error) {
-                console.error('Ошибка загрузки барбершопа:', error);
                 if (isMounted) {
                     setSubmitError('Не удалось загрузить данные барбершопа');
                 }
@@ -95,7 +94,6 @@ const BarbershopForm: React.FC = () => {
             const response = await api.post('/suggest/address', { query });
             setAddressSuggestions(response.data.suggestions || []);
         } catch (error) {
-            console.error('Ошибка при получении подсказок адреса:', error);
         } finally {
             setLoadingSuggestions(false);
         }
@@ -208,7 +206,6 @@ const BarbershopForm: React.FC = () => {
             }
             navigate('/admin/barbershops');
         } catch (error: any) {
-            console.error('Ошибка сохранения барбершопа:', error);
             setSubmitError(error.response?.data?.error || 'Ошибка сохранения');
         } finally {
             setLoading(false);

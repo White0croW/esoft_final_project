@@ -68,7 +68,6 @@ const AdminBarberList: React.FC = () => {
             }
         } catch (error) {
             if (isMountedRef.current) {
-                console.error('Ошибка загрузки мастеров:', error);
                 setError('Не удалось загрузить список мастеров');
                 setBarbers([]);
             }
@@ -113,7 +112,6 @@ const AdminBarberList: React.FC = () => {
                     searchInputRef.current.focus();
                 }
             } catch (error) {
-                console.error('Ошибка удаления мастера:', error);
                 setError('Не удалось удалить мастера');
             } finally {
                 setDeletingId(null);

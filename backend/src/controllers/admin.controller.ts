@@ -31,7 +31,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
         res.json(stats);
     } catch (error: any) {
-        console.error('Error fetching dashboard stats:', error);
         res.status(500).json({
             message: 'Internal server error',
             error: error.message
@@ -70,7 +69,6 @@ export const getRecentActions = async (req: Request, res: Response) => {
             totalPages: Math.ceil(total / limit)
         });
     } catch (error: any) {
-        console.error('Error fetching recent actions:', error);
         res.status(500).json({
             message: 'Internal server error',
             error: error.message

@@ -78,7 +78,6 @@ const AdminAppointmentList: React.FC = () => {
             }
         } catch (error) {
             if (isMountedRef.current) {
-                console.error('Ошибка загрузки записей:', error);
                 setError('Не удалось загрузить список записей');
                 setAppointments([]);
             }
@@ -112,7 +111,6 @@ const AdminAppointmentList: React.FC = () => {
 
                 if (searchInputRef.current) searchInputRef.current.focus();
             } catch (error) {
-                console.error('Ошибка удаления записи:', error);
                 setError('Не удалось удалить запись');
             } finally {
                 setDeletingId(null);

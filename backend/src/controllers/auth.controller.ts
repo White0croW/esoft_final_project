@@ -36,7 +36,6 @@ export async function signup(req: Request, res: Response) {
             user: { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone },
         });
     } catch (error) {
-        console.error("signup:", error);
         return res.status(500).json({ message: "Server error" });
     }
 }
@@ -70,7 +69,6 @@ export async function signin(req: Request, res: Response) {
             user: { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone },
         });
     } catch (error) {
-        console.error("signin:", error);
         return res.status(500).json({ message: "Server error" });
     }
 }
@@ -108,7 +106,6 @@ export async function me(req: Request, res: Response) {
         // 2) Возвращаем профиль и историю
         return res.json(user);
     } catch (error) {
-        console.error("me:", error);
         return res.status(500).json({ message: "Server error" });
     }
 }

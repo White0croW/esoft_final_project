@@ -57,7 +57,6 @@ const UserList: React.FC = () => {
                     searchInputRef.current.focus();
                 }
             } catch (error) {
-                console.error('Ошибка загрузки пользователей:', error);
                 setError('Не удалось загрузить список пользователей');
             } finally {
                 setLoading(false);
@@ -88,7 +87,6 @@ const UserList: React.FC = () => {
                     searchInputRef.current.focus();
                 }
             } catch (error) {
-                console.error('Ошибка удаления пользователя:', error);
                 setError('Не удалось удалить пользователя');
             }
         }

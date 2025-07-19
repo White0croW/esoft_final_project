@@ -63,7 +63,6 @@ const AdminServiceList: React.FC = () => {
             }
         } catch (error) {
             if (isMountedRef.current) {
-                console.error('Ошибка загрузки услуг:', error);
                 setError('Не удалось загрузить список услуг');
                 setServices([]);
             }
@@ -97,7 +96,6 @@ const AdminServiceList: React.FC = () => {
 
                 if (searchInputRef.current) searchInputRef.current.focus();
             } catch (error) {
-                console.error('Ошибка удаления услуги:', error);
                 setError('Не удалось удалить услугу');
             } finally {
                 setDeletingId(null);

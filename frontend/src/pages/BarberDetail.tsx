@@ -103,7 +103,6 @@ export default function BarberDetail() {
             setSelectedTime(null);
             setSelectedDate(null);
         } catch (error) {
-            console.error("Ошибка записи:", error);
             setSnackbar({
                 open: true,
                 message: "Не удалось записаться. Попробуйте позже.",

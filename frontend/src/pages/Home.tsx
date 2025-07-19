@@ -99,7 +99,6 @@ export default function Home() {
                                 setShops(nearbyShops);
                                 setDisplayedShops(nearbyShops);
                             } catch (error) {
-                                console.error(error);
                             }
                             setLoading(false);
                         },
@@ -110,7 +109,6 @@ export default function Home() {
                                 setShops(popularShops);
                                 setDisplayedShops(popularShops);
                             } catch (error) {
-                                console.error(error);
                             }
                             setLoading(false);
                         }
@@ -122,12 +120,10 @@ export default function Home() {
                         setShops(popularShops);
                         setDisplayedShops(popularShops);
                     } catch (error) {
-                        console.error(error);
                     }
                     setLoading(false);
                 }
             } catch (error) {
-                console.error(error);
                 setLoading(false);
             }
         };
@@ -158,7 +154,6 @@ export default function Home() {
             const { suggestions } = await res.json();
             setAddrOptions(suggestions || []);
         } catch (err) {
-            console.error("Ошибка запроса к backend:", err);
         }
     };
 

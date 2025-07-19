@@ -20,7 +20,6 @@ router.post("/suggest/address", async (req, res) => {
         const data = await response.json();
         res.json(data);
     } catch (err) {
-        console.error("Ошибка Dadata:", err);
         res.status(500).json({ error: "Ошибка при запросе к Dadata" });
     }
 });

@@ -44,7 +44,6 @@ export async function authMiddleware(
 
         return next();
     } catch (err: any) {
-        console.error("authMiddleware:", err);
         // различаем ошибки JWT
         if (err.name === "TokenExpiredError") {
             return res.status(401).json({ message: "Token expired" });

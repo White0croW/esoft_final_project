@@ -137,7 +137,6 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
 
         res.json(availableSlots);
     } catch (error) {
-        console.error("Ошибка получения слотов:", error);
         res.status(500).json({ error: "Ошибка сервера" });
     }
 };
@@ -146,27 +145,33 @@ async function hasUserAppointmentConflict(
     userId: number,
     date: Date,
     startTime: string,
-    endTime: string
+    endTime: string,
+    excludeAppointmentId?: number // Добавляем параметр для исключения текущей записи
 ): Promise<boolean> {
     const startOfDay = new Date(date);
     const endOfDay = new Date(date);
     endOfDay.setDate(endOfDay.getDate() + 1);
 
+    const where: any = {
+        userId,
+        date: {
+            gte: startOfDay,
+            lt: endOfDay
+        },
+        status: { in: ["NEW", "CONFIRMED"] },
+        NOT: excludeAppointmentId ? { id: excludeAppointmentId } : undefined,
+        OR: [
+            {
+                AND: [
+                    { startTime: { lt: endTime } },
+                    { endTime: { gt: startTime } }
+                ]
+            }
+        ]
+    };
+
     const existingAppointments = await prisma.appointment.findMany({
-        where: {
-            userId,
-            date: {
-                gte: startOfDay,
-                lt: endOfDay
-            },
-            status: { in: ["NEW", "CONFIRMED"] },
-            OR: [
-                {
-                    startTime: { lt: endTime },
-                    endTime: { gt: startTime }
-                }
-            ]
-        }
+        where
     });
 
     return existingAppointments.length > 0;
@@ -248,7 +253,6 @@ export const createAppointment = [
 
             res.status(201).json(appointment);
         } catch (error) {
-            console.error("Ошибка создания записи:", error);
             res.status(400).json({ error: "Ошибка создания записи" });
         }
     }
@@ -294,7 +298,6 @@ export const getMyAppointments = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error) {
-        console.error("Ошибка получения записей:", error);
         res.status(500).json({ error: "Ошибка сервера" });
     }
 };
@@ -325,7 +328,6 @@ export const cancelAppointment = async (req: Request, res: Response) => {
 
         res.json({ message: "Запись успешно отменена" });
     } catch (error) {
-        console.error("Ошибка отмены записи:", error);
         res.status(500).json({ message: "Ошибка при отмене записи" });
     }
 };
@@ -402,7 +404,6 @@ export const getAllAppointments = async (req: Request, res: Response) => {
             currentPage: pageNum,
         });
     } catch (error) {
-        console.error("Error fetching appointments:", error);
         res.status(500).json({ error: "Ошибка при получении записей" });
     }
 };
@@ -433,7 +434,6 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 
         res.json(appointment);
     } catch (error) {
-        console.error("Error fetching appointment:", error);
         res.status(500).json({ error: "Ошибка сервера" });
     }
 };
@@ -466,17 +466,17 @@ export const createAdminAppointment = async (req: Request, res: Response) => {
         const endDate = new Date(startDate.getTime() + service.duration * 60000);
         const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
 
-        // 3. Проверить, нет ли у пользователя другой записи на это время
+        // Проверить, нет ли у пользователя другой записи на это время
         const userConflict = await hasUserAppointmentConflict(
             userId,
-            new Date(date),
+            startDate,
             startTime,
             endTime
         );
 
         if (userConflict) {
             return res.status(409).json({
-                error: "У вас уже есть запись на это время к другому барберу"
+                error: "У пользователя уже есть запись на это время к другому барберу"
             });
         }
 
@@ -509,7 +509,6 @@ export const createAdminAppointment = async (req: Request, res: Response) => {
 
         res.status(201).json(newAppointment);
     } catch (error) {
-        console.error("Error creating appointment:", error);
         res.status(500).json({ error: "Ошибка при создании записи" });
     }
 };
@@ -556,18 +555,22 @@ export const updateAppointment = async (req: Request, res: Response) => {
             endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
         }
 
-        // 3. Проверить, нет ли у пользователя другой записи на это время
-        const userConflict = await hasUserAppointmentConflict(
-            id,
-            new Date(date),
-            startTime,
-            endTime
-        );
+        // Только если изменяется дата/время/услуга
+        if (startTime || serviceId || date) {
+            // 3. Проверить, нет ли у пользователя другой записи на это время
+            const userConflict = await hasUserAppointmentConflict(
+                currentAppointment.userId, // Исправлено: передаем ID пользователя
+                finalDate,
+                startTime || currentAppointment.startTime,
+                endTime,
+                id // Исключаем текущую запись из проверки
+            );
 
-        if (userConflict) {
-            return res.status(409).json({
-                error: "У вас уже есть запись на это время к другому барберу"
-            });
+            if (userConflict) {
+                return res.status(409).json({
+                    error: "У пользователя уже есть другая запись на это время"
+                });
+            }
         }
 
         // Обновление записи
@@ -602,7 +605,6 @@ export const updateAppointment = async (req: Request, res: Response) => {
 
         res.json(updatedAppointment);
     } catch (error) {
-        console.error("Error updating appointment:", error);
         res.status(500).json({ error: "Ошибка при обновлении записи" });
     }
 };
@@ -645,7 +647,6 @@ export const deleteAppointment = async (req: Request, res: Response) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error("Error deleting appointment:", error);
         res.status(500).json({ error: "Ошибка при удалении записи" });
     }
 };

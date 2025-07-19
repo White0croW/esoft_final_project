@@ -30,7 +30,6 @@ const UserForm: React.FC = () => {
                 const response = await api.get(`/admin/users/${id}`);
                 setFormUser(response.data);
             } catch (error) {
-                console.error('Ошибка загрузки пользователя:', error);
                 setSubmitError('Не удалось загрузить данные пользователя');
             } finally {
                 setLoading(false);
@@ -95,7 +94,6 @@ const UserForm: React.FC = () => {
             }
             navigate('/admin/users');
         } catch (error: any) {
-            console.error('Ошибка сохранения пользователя:', error);
             setSubmitError(error.response?.data?.message || 'Ошибка сохранения');
         }
     };

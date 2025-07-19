@@ -47,7 +47,6 @@ const ServiceForm: React.FC = () => {
                         });
                     }
                 } catch (error) {
-                    console.error('Ошибка загрузки услуги:', error);
                     if (isMounted) setSubmitError('Не удалось загрузить данные услуги');
                 } finally {
                     if (isMounted) setLoading(false);
@@ -83,7 +82,6 @@ const ServiceForm: React.FC = () => {
             }
             navigate('/admin/services');
         } catch (error: any) {
-            console.error('Ошибка сохранения:', error);
             setSubmitError(error.response?.data?.error || 'Ошибка сохранения услуги');
         } finally {
             setLoading(false);

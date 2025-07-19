@@ -122,7 +122,6 @@ const AppointmentForm: React.FC = () => {
                     setSelectedService(service || null);
                 }
             } catch (error) {
-                console.error('Ошибка загрузки данных:', error);
                 setSubmitError('Не удалось загрузить данные');
             } finally {
                 setLoading(false);
@@ -155,7 +154,6 @@ const AppointmentForm: React.FC = () => {
 
                 setTimeSlots(slots);
             } catch (error) {
-                console.error('Ошибка загрузки слотов:', error);
                 setSlotError('Не удалось загрузить доступное время');
             } finally {
                 setLoadingSlots(false);
@@ -245,7 +243,6 @@ const AppointmentForm: React.FC = () => {
 
             navigate('/admin/appointments');
         } catch (error) {
-            console.error('Ошибка сохранения записи:', error);
             setSubmitError('Ошибка сохранения записи');
         } finally {
             setSubmitting(false);

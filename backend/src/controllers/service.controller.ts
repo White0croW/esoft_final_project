@@ -53,7 +53,6 @@ export const getAllServices = async (req: Request, res: Response) => {
             currentPage: pageNum,
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при получении услуг" });
     }
 };
@@ -71,7 +70,6 @@ export const getServiceById = async (req: Request, res: Response) => {
 
         res.json(service);
     } catch (error) {
-        console.error("Ошибка при получении услуги:", error);
         res.status(500).json({
             error: "Ошибка сервера",
             details: error
@@ -108,7 +106,6 @@ export const createService = async (req: Request, res: Response) => {
 
         res.status(201).json(newService);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при создании услуги" });
     }
 };
@@ -144,7 +141,6 @@ export const updateService = async (req: Request, res: Response) => {
 
         res.json(updatedService);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при обновлении услуги" });
     }
 };
@@ -182,7 +178,6 @@ export const deleteService = async (req: Request, res: Response) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при удалении услуги" });
     }
 };

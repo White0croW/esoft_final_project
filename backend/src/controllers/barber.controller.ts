@@ -18,8 +18,6 @@ export const getBarberById = async (req: Request, res: Response) => {
 
         res.json(barber);
     } catch (error) {
-        console.error("Ошибка при получении мастера:", error);
-        // Всегда возвращаем JSON при ошибках!
         res.status(500).json({
             error: "Ошибка сервера",
             details: error
@@ -82,7 +80,6 @@ export const getAllBarbers = async (req: Request, res: Response) => {
             currentPage: pageNum,
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при получении мастеров" });
     }
 };
@@ -116,7 +113,6 @@ export const createBarber = async (req: Request, res: Response) => {
 
         res.status(201).json(newBarber);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при создании мастера" });
     }
 };
@@ -152,7 +148,6 @@ export const updateBarber = async (req: Request, res: Response) => {
 
         res.json(updatedBarber);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при обновлении мастера" });
     }
 };
@@ -191,7 +186,6 @@ export const deleteBarber = async (req: Request, res: Response) => {
 
         res.status(204).send();
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при удалении мастера" });
     }
 };

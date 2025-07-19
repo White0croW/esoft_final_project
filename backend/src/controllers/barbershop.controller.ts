@@ -63,7 +63,6 @@ export const getBarbershops = async (req: Request, res: Response) => {
 
         res.json(barbershops);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка загрузки барбершопов" });
     }
 };
@@ -80,7 +79,6 @@ export const getBarbershopById = async (req: Request, res: Response) => {
         }
         res.json(barbershop);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка загрузки барбершопа" });
     }
 };
@@ -105,7 +103,6 @@ export const getCities = async (req: Request, res: Response) => {
 
         res.json(cities);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка загрузки городов" });
     }
 };
@@ -162,7 +159,6 @@ export const getAllBarbershops = async (req: Request, res: Response) => {
             currentPage: pageNum,
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при получении барбершопов" });
     }
 };
@@ -195,13 +191,11 @@ export const createBarbershop = async (req: Request, res: Response) => {
                     }
                 });
             } catch (logError) {
-                console.error('Audit log error:', logError);
             }
         }
 
         res.status(201).json(newBarbershop);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при создании барбершопа" });
     }
 };
@@ -236,13 +230,11 @@ export const updateBarbershop = async (req: Request, res: Response) => {
                     }
                 });
             } catch (logError) {
-                console.error('Audit log error:', logError);
             }
         }
 
         res.json(updatedBarbershop);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при обновлении барбершопа" });
     }
 };
@@ -280,13 +272,11 @@ export const deleteBarbershop = async (req: Request, res: Response) => {
                     }
                 });
             } catch (logError) {
-                console.error('Audit log error:', logError);
             }
         }
 
         res.status(204).send();
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Ошибка при удалении барбершопа" });
     }
 };

@@ -70,7 +70,6 @@ const AdminBarbershopList: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('Ошибка загрузки барбершопов:', error);
             if (isMountedRef.current) {
                 setError('Не удалось загрузить список барбершопов');
                 setBarbershops([]);
@@ -115,7 +114,6 @@ const AdminBarbershopList: React.FC = () => {
                     searchInputRef.current.focus();
                 }
             } catch (error) {
-                console.error('Ошибка удаления барбершопа:', error);
                 setError('Не удалось удалить барбершоп');
             } finally {
                 setDeletingId(null);

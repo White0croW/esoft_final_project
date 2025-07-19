@@ -64,7 +64,6 @@ const BarberForm: React.FC = () => {
                     }
                 }
             } catch (error) {
-                console.error('Ошибка загрузки данных:', error);
                 if (isMounted) {
                     setSubmitError('Не удалось загрузить данные');
                     setBarbershops([]);
@@ -104,7 +103,6 @@ const BarberForm: React.FC = () => {
             }
             navigate('/admin/barbers');
         } catch (error: any) {
-            console.error('Ошибка сохранения:', error);
             setSubmitError(error.response?.data?.error || 'Ошибка сохранения');
         } finally {
             setLoading(false);

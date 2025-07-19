@@ -59,7 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setUser(newUser);
                     }
                 } catch (error) {
-                    console.error("Error parsing user data from storage:", error);
                 }
             }
         };
@@ -80,7 +79,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 updateUser(me);
             }
         } catch (error) {
-            console.error("Failed to refresh user data:", error);
         }
     };
 

@@ -17,7 +17,6 @@ export async function getProfile(req: Request, res: Response) {
         if (!user) return res.status(404).json({ message: "Пользователь не найден" });
         res.json(user);
     } catch (err) {
-        console.error("getProfile error:", err);
         res.status(500).json({ message: "Ошибка сервера" });
     }
 }
@@ -59,7 +58,6 @@ export async function updateProfile(req: Request, res: Response) {
         });
         res.json({ message: "Профиль обновлён", user });
     } catch (err) {
-        console.error("updateProfile error:", err);
         res.status(500).json({ message: "Ошибка сервера" });
     }
 }
@@ -96,7 +94,6 @@ export async function changePassword(req: Request, res: Response) {
 
         res.json({ message: "Пароль обновлён" });
     } catch (err) {
-        console.error("changePassword error:", err);
         res.status(500).json({ message: "Ошибка сервера" });
     }
 }
@@ -116,7 +113,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
         });
         res.json(users);
     } catch (err) {
-        console.error("getAllUsers error:", err);
         res.status(500).json({ message: "Ошибка сервера" });
     }
 };
@@ -139,7 +135,6 @@ export const getUserById = async (req: Request, res: Response) => {
         if (!user) return res.status(404).json({ message: "Пользователь не найден" });
         res.json(user);
     } catch (err) {
-        console.error("getUserById error:", err);
         res.status(500).json({ message: "Ошибка сервера" });
     }
 };
@@ -183,7 +178,6 @@ export const createUser = async (req: Request, res: Response) => {
         });
         res.status(201).json(newUser);
     } catch (err) {
-        console.error("createUser error:", err);
         res.status(400).json({ message: "Ошибка создания пользователя" });
     }
 };
@@ -217,7 +211,6 @@ export const updateUser = async (req: Request, res: Response) => {
         });
         res.json(updatedUser);
     } catch (err) {
-        console.error("updateUser error:", err);
         res.status(400).json({ message: "Ошибка обновления пользователя" });
     }
 };
@@ -239,7 +232,6 @@ export const deleteUser = async (req: Request, res: Response) => {
         });
         res.status(204).send();
     } catch (err) {
-        console.error("deleteUser error:", err);
         res.status(400).json({ message: "Ошибка удаления пользователя" });
     }
 };
